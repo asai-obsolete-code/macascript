@@ -20,19 +20,19 @@
     import int interface long native package private protected
     public short static super synchronized throws transient volatile))
 
-
 (defparameter *constants*
-  '((t . "true")
-    (true . "true")
-    (on . "true")
-    (yes . "true")
-    (false . "false")
-    (off . "false")
-    (no . "false")
-    (undefined . "void 0")
-    (null . "void 0")
-    (this . "this")
-    (@ . "this")))
+  '((t . true)
+    (on . true)
+    (yes . true)
+    (off . false)
+    (no . false)
+    (null . undefined)
+    (@ . this))
+  "alist for aliasing the constants such as \"on\" \"yes\".")
+
+(defparameter *env* nil
+  "contains lists of variables enclosed in each closure. 
+each element represents a closure and it contains variable list.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; utility
@@ -53,10 +53,14 @@
 (defun prints (&rest args)
   (format nil "~{~a~}" args))
 
-
 (defmacro defw (name args &rest contents)
   `(defun ,name ,args
      (prints ,@contents)))
+
+(defmacro prints-if (condition then &optional else)
+  `(if ,condition
+       (prints ,@then)
+       (prints ,@else)))
 
 ;; (defmacro defw (name args &rest contents)
 ;;   (let ((args (append args (unless (member '&key args) '(&key)) '(must-return-value))))
@@ -69,16 +73,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rewriter
 
-;; helper
+;; helpers
 
+(defparameter *maca-rules* nil
+  "alist of name-rule pair")
+
+(defmacro defmaca (name args rule &body body)
+  (declare (ignore rule))
+  `(defun ,name ,args
+     (m-compile ,@body)))
+
+(defun m-glue (args)
+  (m-compile arg))
 (defw m-paren (arg) "(" (m-compile arg) ")")
+(defw m-block (arg) "{" (m-compile arg) "}")
 (defun m-comma (&rest args)
   (format nil "~{~a~^,~}" (mapcar #'m-compile args)))
-
-
-;; -----------------------------
-;; sentences
-
 (defun m-sentences (sents)
   (format nil "~{~a;~%~}" (mapcar #'m-compile sents)))
 
@@ -86,9 +96,9 @@
 ;; keywords
 
 (defun m-var (var &optional val)
-  (if val
-      (prints "var " var "=" (m-compile val))
-      (prints "var " var)))
+  (prints-if val
+	     ("var " (m-compile `(= ,var val)))
+	     ("var " (m-compile var))))
 
 ;; (defw m-var (var val)
 ;;   (if must-return-value
@@ -101,20 +111,22 @@
 
 ;; -----------------------------
 ;; function and function calls
-(defun m-function-call (op args)
-  (format nil "~a(~{~a~^,~})" (symbol-name op) (mapcar #'m-compile args)))
+(defw m-function-call (op args)
+  (m-compile op)
+  (m-compile `(paren (comma ,@(mapcar #'m-compile args)))))
 
 (defun m-args (&rest args)
   (let ((args (flatten args)))
-    (cond ((not-uniquep args) (error (prints "duplicated argument in the list:" (not-unique args))))
-	  ((some #'(lambda (a) (not (symbolp a))) args) (error (prints "invalid argument in the list")))
-	  (t (format nil "~{~a~^,~}" args)))))
+    (cond ((not-uniquep args)
+	   (error (prints "duplicated argument in the list:" (not-unique args))))
+	  ((some #'(lambda (a) (not (symbolp a))) args)
+	   (error (prints "invalid argument in the list")))
+	  (t (m-compile `(comma ,@args))))))
 
 (defw m-function (args body)
-  "function(" (m-args args) "){"
-  (m-sentences (butlast body))
-  (m-return (car (last body)))
-  "}")
+  "function"
+  (m-compile `(paren (comma ,args)))
+  (m-compile `(blk ,(butlast body) (return ,(car (last body))))))
 
 ;; not implemented
 (defw m-inherit-this-function (args body)
@@ -142,20 +154,26 @@
   (m-compile condition) "?" (m-compile then) ":" (m-compile else))
 
 (defun m-if (condition then &optional else)
-  (if else
-      (format nil "if(~a){~%~a}else{~%~a}~%" (m-compile condition) (m-compile then) (m-compile else))
-      (format nil "if(~a){~%~a}~%" (m-compile condition) (m-compile then))))
+  (prints-if else
+	     ("if" (m-compile `(paren ,condition))
+		   (m-compile `(blk ,@then))
+		   "else" 
+		   (m-compile `(blk ,@else)))
+	     ("if" (m-compile `(paren ,condition))
+		   (m-compile `(blk ,@then)))))
 
-;; (defw m-iter-array (val array body &optional (key (gensym-js)))
-;;   (let ((len (gensym-js "l"))
-;; 	(ref (gensym-js "ref")))
-;;     `(maca (var ,key 0)
-;; 	   (var ,len (,array > length))
-;; 	   (var ,ref))
-;;     "for(;" key "<len;" key "++){"
-;;     `(maca (= ,ref (,array > ,key)))
-;;     (m-compile body)
-;;     "}"))
+(defw m-iter-array (val array body &optional (key (gensym-js)))
+  (let ((len (gensym-js "l"))
+	(ref (gensym-js "ref")))
+    (m-compile `((var ,key)
+		 (var ,len (,array > length))
+		 (var ,ref)))
+    "for"
+    (m-compile `(paren ((= key 0)
+			(< ,key ,len)
+			(++ key))))
+    (m-compile `(blk (= ,ref (,array > ,key)))
+	       ,@body)))
 
 ;; -----------------------------
 ;; math and operators
@@ -236,12 +254,19 @@
 ;; todo:
 ;;   add an enviromental valiable
 ;;   add "must-return-value" option
-(defun m-compile (lst) 		;&optional (value nil)
+(defun m-compile (lst)
+  (if (null *env*)
+      *env*
   (match lst
+    ;; these operators are just meant to be used by the compiler
+    ;; don't use it
+    ((list 'paren clause)     (rewrite m-paren clause))
+    ((list* 'comma clauses)   (rewrite m-comma clauses))
+    ((list* 'blk clauses)       (rewrite m-block clauses))
+    ((list* 'glue clauses)       (rewrite m-glue clauses))
+
     ((when (assoc val *constants*) (type atom val)) (cdr (assoc val *constants*)))
     ((type atom val) (values val 'atom))
-    ;; parenthesis operator: should avoid using it, its just meant to be used by the compiler
-    ((list 'paren clause)                                (rewrite m-paren clause))
     ((list 'var (or (type symbol v1)
 		    (type string v1)
 		    (type keyword v1)))  (rewrite m-var v1))
@@ -253,31 +278,30 @@
     ((when (member op *infixes*)     (list* op vars))  (rewrite m-infix op vars))
     ((when (member op *mono-ops*)    (list op var))    (rewrite m-mono-ops op var))
     ((when (member op *comparisons*) (list* op vars))  (rewrite m-comparison op vars))
-    ((list (as op 'in) v1 v2)                          (rewrite m-comparison-primitive op v1 v2))
-    ((list '? cond then else)                          (rewrite m-? cond then else))
-    ;; comma operator: should avoid using it, its just meant to be used by the compiler
-    ((list* 'comma clauses)                                (rewrite m-comma clauses))
-    ;; ((list 'set var val)                                   (rewrite m-set var val))
-    ((list* '-> (list* args) body)                         (rewrite m-function args body))
-    ((list* '=> (list* args) body)                         (rewrite m-inherit-this-function args body))
-    ((list* '-/> (list* args) body)                        (rewrite m-procedure-function args body))
-    ((list* '-/  (list* args) body)                        (rewrite m-inline-function args body))
-    ;; ((list* 'for val 'in array body)                       (rewrite m-iter-array val nil array))
-    ;; ((list* 'for val key 'in array body)                   (rewrite m-iter-array val key array))
-    ;; ((list* 'for val 'of array)                            (rewrite m-iter-obj val nil array))
-    ;; ((list* 'for val key 'of array)                        (rewrite m-iter-obj val key array))
-    ;; ((list* 'for 'own val key 'of array)                   (rewrite m-iter-obj val key array :own t))
-    ((list 'if cond then)                                  (rewrite m-if cond then))
-    ((list 'if cond then else)                             (rewrite m-if cond then else))
+    ((list (as op 'in) v1 v2)                 (rewrite m-comparison-primitive op v1 v2))
+    ((list '? cond then else)                 (rewrite m-? cond then else))
+    ;; ((list 'set var val)                      (rewrite m-set var val))
+    ((list* '-> (list* args) body)            (rewrite m-function args body))
+    ((list* '=> (list* args) body)            (rewrite m-inherit-this-function args body))
+    ((list* '-/> (list* args) body)           (rewrite m-procedure-function args body))
+    ((list* '-/  (list* args) body)           (rewrite m-inline-function args body))
+    ;; ((list* 'for val 'in array body)          (rewrite m-iter-array val nil array))
+    ;; ((list* 'for val key 'in array body)      (rewrite m-iter-array val key array))
+    ;; ((list* 'for val 'of array)               (rewrite m-iter-obj val nil array))
+    ;; ((list* 'for val key 'of array)           (rewrite m-iter-obj val key array))
+    ;; ((list* 'for 'own val key 'of array)      (rewrite m-iter-obj val key array :own t))
+    ((list 'if cond then)                     (rewrite m-if cond then))
+    ((list 'if cond then else)                (rewrite m-if cond then else))
     ;; ((list 'try body 'catch (list var) error)              (rewrite m-try body var error nil))
     ;; ((list 'try body 'catch (list var) error 'finally fin) (rewrite m-try body var error fin))
-    ;; ((list* 'try body _)                                   (error "invalid try-catch statement"))
-    ((list* obj '> accessor)                               (rewrite m-accessor obj accessor))
-    ((list* obj '? accessor)                               (rewrite m-exist-accessor obj accessor))
-    ((list* obj '-> accessor)                              (rewrite m-prototype-accessor obj accessor))
-    ((list* (type keyword key) rest)                       (rewrite m-obj lst))
-    ((list* (type atom op) arguments)                      (rewrite m-function-call op arguments))
-    ((list* sentences)                                     (rewrite m-sentences sentences))
+    ;; ((list* 'try body _)                   (error "invalid try-catch statement"))
+    ((list* obj '> accessor)                  (rewrite m-accessor obj accessor))
+    ((list* obj '? accessor)                  (rewrite m-exist-accessor obj accessor))
+    ((list* obj '-> accessor)                 (rewrite m-prototype-accessor obj accessor))
+    ((list* (type keyword key) rest)          (rewrite m-obj lst))
+    ((quote 
+    ((list* (type atom op) arguments)         (rewrite m-function-call op arguments))
+    ((list* sentences)                        (rewrite m-sentences sentences))
     ))
 
 
@@ -295,7 +319,7 @@
 ;; assignments
 (maca (= number 3))
 (maca (var number 3))
-(maca (var (+ 2 1) 3))
+;; (maca (var (+ 2 1) 3))
 
 ;; infix
 (maca (>>> number 3))
