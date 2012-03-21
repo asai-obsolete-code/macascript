@@ -85,8 +85,8 @@ each element represents a closure and it contains variable list.")
 
 (defmacro defmaca (name args &body body)
   (with-gensyms (s)
-	`(defun ,name ,(cons s args)
-	   (m-compile ,s ,@body))))
+	`(defun ,name (,s env ,@args)
+	   (m-compile ,s env ,@body))))
 
 ;; (defmacro m-compile-if (s condition &body thenelse)
 ;;   `(if ,condition
@@ -97,7 +97,7 @@ each element represents a closure and it contains variable list.")
 ;;   `(paren ,a)
 ;;   `(comma ,a ,a))
 
-(defun m-glue (s args)
+(defun m-glue (s env args)
   (format s "~{~a~}"
 		  (mapcar
 		   #'(lambda (arg)
@@ -107,7 +107,7 @@ each element represents a closure and it contains variable list.")
 				   (null "") 
 				   (cons
 ;; 					(break "~a ~a" true-arg (m-compile nil true-arg))
-					(m-compile nil true-arg))
+					(m-compile nil env true-arg))
 				   (string (format nil "\"~a\"" true-arg))
 				   (t (format nil "~(~a~)" true-arg)))))
 		   args)))
@@ -156,17 +156,17 @@ each element represents a closure and it contains variable list.")
 ;; -  (m-compile op)
 ;; -  (m-compile `(paren (comma ,@(mapcar #'m-compile args)))))
 
-(defun m-function (s args body)
+(defmaca m-function (args body)
   (let ((args (flatten args)))
     (cond ((not-uniquep args)
 		   (error (prints "duplicated argument:" (not-unique args))))
 		  ((some #'(lambda (a) (not (symbolp a))) args)
 		   (error (prints "invalid argument")))
 		  (t 
-		   (m-compile s `(glue function (paren (comma ,@args))
-							   (blk 
-								(,@(butlast body)
-								  (return ,(car (last body)))))))))))
+		   `(glue function (paren (comma ,@args))
+				  (blk 
+				   (,@(butlast body)
+					  (return ,(car (last body))))))))))
 
 ;; ;; not implemented
 ;; (defw m-inherit-this-function (args body)
@@ -194,27 +194,26 @@ each element represents a closure and it contains variable list.")
   `(glue (paren ,condition) ? (paren ,then) colon (paren ,else)))
 
 (defmaca m-exist-? (thing)
-  `(glue (? (!= thing null) thing (void 0))))
+  `(glue (? (!= thing null) ,thing (void 0))))
 
 (defmaca m-if (condition then &optional else)
 ;;   (break "~a ~a" condition then else)
   `(glue if (paren ,condition) (blk ,then) 
 		 ,(when else `(else (blk ,else)))))
 
-(defun m-iter-array (s val array body &optional (key (gensym-js)))
+(defmaca m-iter-array (val array body &optional (key (gensym-js)))
   (let ((len (gensym "l"))
 		(ref (gensym "ref")))
-    (m-compile s
-	 `((var (comma ,key ,val
-				   (= ,ref ,array)
-				   (= ,len (,array > length))))
-	   (glue for
-			 (paren ((= key 0)
-					 (< ,key ,len)
-					 (++ key)))
-			 (blk 
-			  ((= ,val (,ref > ,key))
-			   ,@body)))))))
+	`((var (comma ,key ,val
+				  (= ,ref ,array)
+				  (= ,len (,array > length))))
+	  (glue for
+			(paren ((= key 0)
+					(< ,key ,len)
+					(++ key)))
+			(blk 
+			 ((= ,val (,ref > ,key))
+			  ,@body))))))
 
 
 ;; -----------------------------
@@ -240,10 +239,11 @@ each element represents a closure and it contains variable list.")
 (defparameter *infixes* 
   '(+ - * / % << >> >>> && in)) 		;||
 
-(defun m-infix (s op vars)
-  (m-compile-if s (third vars)
-	`(paren (glue ,(car vars) space ,op space (,op ,@(cdr vars))))
-	`(paren (glue ,(car vars) space ,op space ,(cadr vars)))))
+(defmaca m-infix (op vars)
+  `(paren (glue ,(car vars) space ,op space
+				,(if (third vars) 
+					 `(,op ,@(cdr vars))
+					 (cadr vars)))))
 
 (defparameter *comparisons* 
   '(== != === !== > < >= <=))
@@ -251,12 +251,12 @@ each element represents a closure and it contains variable list.")
 ;; (defmaca m-comparison-primitive (op var1 var2)
 ;;   `(paren (glue ,var1 ',op ,var2)))
 
-(defun m-comparison (s op vars)
-  (m-compile-if s (third vars)
-	`(glue (paren (glue ,(first vars) ,op ,(second vars)))
-		   &&
-		   (,op ,@(cdr vars)))
-	`(paren (glue ,(first vars) ,op ,(second vars)))))
+(defmaca m-comparison (op vars)
+  (if (third vars)
+	  `(glue (paren (glue ,(first vars) ,op ,(second vars)))
+			 &&
+			 (,op ,@(cdr vars)))
+	  `(paren (glue ,(first vars) ,op ,(second vars)))))
      
 
 (defparameter *mono-ops*
@@ -277,7 +277,7 @@ each element represents a closure and it contains variable list.")
 				 a)))
 	(rec plist nil)))
 
-(defun m-obj (s key-value-plist)
+(defmaca m-obj (key-value-plist)
 ;;   (break "~A" (plist-to-alist key-value-plist))
 ;;   (break "~A" (length key-value-plist))
   (if (oddp (length key-value-plist))
@@ -287,7 +287,7 @@ each element represents a closure and it contains variable list.")
 								`(glue ,(car cons) colon ,(cdr cons)))
 							alist)))
 ;; 		(break "~A" alist)
-		(m-compile s `(blk (comma ,@pairs))))))
+		`(blk (comma ,@pairs)))))
 
 ;;   (format nil "{~%~{~a:~a~^,~%~}~%}"
 ;; 	  (mapcar #'(lambda (val) (if (keywordp val) val (m-compile val)))
@@ -317,15 +317,15 @@ each element represents a closure and it contains variable list.")
 ;; 			    ,envname)))
 ;; 	   ,@body))
 
-(defun m-exist-accessor (s obj accessor) ; &key env
+(defmaca m-exist-accessor (obj accessor) ; &key env
   (let ((ref (gensym))
 		(child (car accessor)))
-	(m-compile s `(glue (? (!= (paren (= ,ref (,obj > ,child)))
+	`(glue (? (!= (paren (= ,ref (,obj > ,child)))
 							   null)
 						   ,(if (cdr accessor)
 								`(,ref . ,(cdr accessor))
 								ref)
-						   (void 0))))))
+						   (void 0)))))
 
 (defmaca m-prototype-accessor (obj accessor)
   `(glue ,obj period prototype period
@@ -340,9 +340,9 @@ each element represents a closure and it contains variable list.")
 ;;   add an enviromental valiable
 ;;   add "must-return-value" option
 
-(defun m-compile (s lst)
+(defun m-compile (s env lst)
   (macrolet ((rewrite (name &rest args)
-			   `(values (,name s ,@args) ',name)))
+			   `(values (,name s env ,@args) ',name)))
 	(match lst
 	  ;; these operators are just meant to be used by the compiler
 	  ;; don't use it
@@ -352,7 +352,7 @@ each element represents a closure and it contains variable list.")
 	  ((list 'blk clause)     (rewrite m-block clause))
 
 	  ;;     ((when (assoc val *aliases*) (type atom val)) (cdr (assoc val *aliases*)))
-	  ((type atom val) (values (m-glue s (list val)) (type-of val)))
+	  ((type atom val) (values (m-glue s env (list val)) (type-of val)))
 	  ((list 'var (type symbol v1)) (rewrite m-var v1))
 	  ((list 'var (type symbol v1) v2)  (rewrite m-var v1 v2))
 	  ((list* 'var _ rest)              (error "invalid variable name"))
