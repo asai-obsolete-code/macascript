@@ -103,6 +103,76 @@
 		   ((pay money)
 			(go home))))
 
+
+;; iteration
+
+(maca (for elem in ary
+		   (alert elem)))
+(maca (for elem i in ary
+		   (alert elem i)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ;; # Assignment:
 ;; number   = 42
 ;; opposite = true

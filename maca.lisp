@@ -6,7 +6,6 @@
   (:use :common-lisp :cl-user :alexandria :cl-match :anaphora))
 
 (proclaim '(optimize (debug 3)))
-
 (in-package :maca)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -25,26 +24,10 @@
 (defun uniquep (lst &key (test #'eq))
   (not (not-uniquep lst :test test)))
 
-(defun prints (&rest args)
-  (format nil "~{~a~}" args))
-
-(defmacro defw (name args &rest contents)
-  `(defun ,name ,args
-     (prints ,@contents)))
-
-(defmacro prints-if (condition then &optional else)
-  `(if ,condition
-       (prints ,@then)
-       (prints ,@else)))
-
-(defun gensym-js (&optional (thing "G"))
-  (symbol-name (gensym thing)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rewriter
 
 ;; helpers
-
 
 (defparameter *reserved*
   '(break case catch continue default delete
@@ -73,41 +56,28 @@
 	(comma . #\,)
 	(lbrace . #\{)
 	(rbrace . #\})
+	(lbracket . #\[)
+	(rbracket . #\])
 	(lparen . #\()
 	(rparen . #\)))
   "alist for aliasing the constants such as \"on\" \"yes\".")
 
-(defparameter *env* nil
-  "contains lists of variables enclosed in each closure. 
-each element represents a closure and it contains variable list.")
-
-
+;; core macro
 
 (defmacro defmaca (name args &body body)
-  (with-gensyms (s)
+  (with-gensyms (s definition)
 	`(defun ,name (,s env ,@args)
-	   (m-compile ,s env ,@body))))
-
-;; (defmacro m-compile-if (s condition &body thenelse)
-;;   `(if ,condition
-;;        (m-compile ,s ,(car thenelse))
-;;        (m-compile ,s ,@(cdr thenelse))))
-
-;; (m-compile-if a
-;;   `(paren ,a)
-;;   `(comma ,a ,a))
+	   (let ((,definition ,@body))		;body will be evaluated first
+		 (m-compile ,s env ,definition))))) ;so you can perform some bad behavior on "env". it is intentional
 
 (defun m-glue (s env args)
   (format s "~{~a~}"
 		  (mapcar
 		   #'(lambda (arg)
 			   (let ((true-arg (or (cdr (assoc arg *aliases*)) arg)))
-;; 				 (break "~a" (type-of true-arg))
 				 (typecase true-arg
 				   (null "") 
-				   (cons
-;; 					(break "~a ~a" true-arg (m-compile nil true-arg))
-					(m-compile nil env true-arg))
+				   (cons (m-compile nil env true-arg))
 				   (string (format nil "\"~a\"" true-arg))
 				   (t (format nil "~(~a~)" true-arg)))))
 		   args)))
@@ -115,7 +85,6 @@ each element represents a closure and it contains variable list.")
 
 (defmaca m-paren (arg)
   `(glue lparen ,arg rparen))
-
 (defmaca m-block (arg)
   `(glue lbrace newline ,arg rbrace))
 (defmaca m-comma (args)
@@ -128,15 +97,6 @@ each element represents a closure and it contains variable list.")
 			#'(lambda (sent) `(glue ,sent semicolon newline))
 			sents)))
 
-;; (defun m-paren (arg) 
-;;   (format nil "(~%~a)" (m-compile arg)))
-;; (defun m-block (arg)
-;;   (format nil "{~%~a}" (m-compile arg)))
-;; (defun m-comma (args)
-;;   (format nil "~{~a~^,~}" (mapcar #'m-compile args)))
-;; (defun m-sentences (sents)
-;;   (format nil "~{~a;~%~}" (mapcar #'m-compile sents)))
-
 ;; -----------------------------
 ;; keywords
 
@@ -144,17 +104,11 @@ each element represents a closure and it contains variable list.")
   `(glue var space
 		 ,(if val `(= ,var ,val) var)))
 
-;; (defun m-var (var &optional val)
-;;   (prints-if val
-;; 	     ("var " (m-compile `(= ,var val)))
-;; 	     ("var " (m-compile var))))
-
 ;; -----------------------------
 ;; function and function calls
+
 (defmaca m-function-call (op args)
   `(glue ,op (paren (comma ,@args))))
-;; -  (m-compile op)
-;; -  (m-compile `(paren (comma ,@(mapcar #'m-compile args)))))
 
 (defmaca m-function (args body)
   (let ((args (flatten args)))
@@ -197,24 +151,23 @@ each element represents a closure and it contains variable list.")
   `(glue (? (!= thing null) ,thing (void 0))))
 
 (defmaca m-if (condition then &optional else)
-;;   (break "~a ~a" condition then else)
   `(glue if (paren ,condition) (blk ,then) 
 		 ,(when else `(else (blk ,else)))))
 
-(defmaca m-iter-array (val array body &optional (key (gensym-js)))
+(defmaca m-iter-array (val array body &optional (key (gensym)))
   (let ((len (gensym "l"))
 		(ref (gensym "ref")))
-	`((var (comma ,key ,val
-				  (= ,ref ,array)
-				  (= ,len (,array > length))))
+	`((var ,key)
+	  (var ,val)
+	  (var ,ref ,array)
+	  (var ,len (,ref > length))
 	  (glue for
-			(paren ((= key 0)
+			(paren ((= ,key 0)
 					(< ,key ,len)
-					(++ key)))
+					(++ ,key)))
 			(blk 
-			 ((= ,val (,ref > ,key))
+			 ((= ,val (,ref -. ,key))
 			  ,@body))))))
-
 
 ;; -----------------------------
 ;; try/catch expression
@@ -227,12 +180,12 @@ each element represents a closure and it contains variable list.")
 		 ,@(when finally
 				 `(finally (blk ,finally)))))
 			 
-
 ;; -----------------------------
 ;; math and operators
 
 (defparameter *assignments*
   '(= += -= *= /= <<= >>= >>>= &= ^= ))	;|= 
+
 (defmaca m-assignments (op to from)
   `(glue ,to space ,op space ,from))
 
@@ -247,9 +200,6 @@ each element represents a closure and it contains variable list.")
 
 (defparameter *comparisons* 
   '(== != === !== > < >= <=))
-
-;; (defmaca m-comparison-primitive (op var1 var2)
-;;   `(paren (glue ,var1 ',op ,var2)))
 
 (defmaca m-comparison (op vars)
   (if (third vars)
@@ -278,44 +228,28 @@ each element represents a closure and it contains variable list.")
 	(rec plist nil)))
 
 (defmaca m-obj (key-value-plist)
-;;   (break "~A" (plist-to-alist key-value-plist))
-;;   (break "~A" (length key-value-plist))
   (if (oddp (length key-value-plist))
 	  (error "invalid object literal")
 	  (let* ((alist (plist-to-alist key-value-plist))
 			 (pairs (mapcar #'(lambda (cons)
 								`(glue ,(car cons) colon ,(cdr cons)))
 							alist)))
-;; 		(break "~A" alist)
 		`(blk (comma ,@pairs)))))
 
-;;   (format nil "{~%~{~a:~a~^,~%~}~%}"
-;; 	  (mapcar #'(lambda (val) (if (keywordp val) val (m-compile val)))
-;; 		  key-value-lst)))
+(defmaca m-direct-accessor (obj accessor)
+  `(glue ,obj
+		 lbracket
+		 ,(if (cdr accessor)
+			  accessor
+			  (car accessor))
+		 rbracket))
 
-
-;; (defun m-obj (key-value-lst)
-;;   (format nil "{~%~{~a:~a~^,~%~}~%}"
-;; 	  (mapcar #'(lambda (val) (if (keywordp val) val (m-compile val)))
-;; 		  key-value-lst)))
 
 (defmaca m-accessor (obj accessor)
   `(glue ,obj period
 		 ,(if (cdr accessor)
 			  accessor
 			  (car accessor))))
-
-;; (defw m-accessor (obj accessor)
-;;   (m-compile obj) "." (if (cdr accessor) 
-;; 			  (m-compile accessor)
-;; 			  (m-compile (car accessor))))
-
-;; (defmacro print-with-environtment (envname &body body)
-;;   `(prints (format nil "~{~a~}" 
-;; 		   (m-compile 
-;; 		    (mapcar #'(lambda (varname) `(var ,varname))
-;; 			    ,envname)))
-;; 	   ,@body))
 
 (defmaca m-exist-accessor (obj accessor) ; &key env
   (let ((ref (gensym))
@@ -351,7 +285,6 @@ each element represents a closure and it contains variable list.")
 	  ((list* 'comma clauses)   (rewrite m-comma clauses))
 	  ((list 'blk clause)     (rewrite m-block clause))
 
-	  ;;     ((when (assoc val *aliases*) (type atom val)) (cdr (assoc val *aliases*)))
 	  ((type atom val) (values (m-glue s env (list val)) (type-of val)))
 	  ((list 'var (type symbol v1)) (rewrite m-var v1))
 	  ((list 'var (type symbol v1) v2)  (rewrite m-var v1 v2))
@@ -367,8 +300,8 @@ each element represents a closure and it contains variable list.")
 	  ;;     ((list* '=> (list* args) body)            (rewrite m-inherit-this-function args body))
 	  ;;     ((list* '-/> (list* args) body)           (rewrite m-procedure-function args body))
 	  ;;     ((list* '-/  (list* args) body)           (rewrite m-inline-function args body))
-	  ;;     ;; ((list* 'for val 'in array body)          (rewrite m-iter-array val nil array))
-	  ;;     ;; ((list* 'for val key 'in array body)      (rewrite m-iter-array val key array))
+	  ((list* 'for val 'in array body)          (rewrite m-iter-array val array body))
+	  ((list* 'for val key 'in array body)      (rewrite m-iter-array val array body key))
 	  ;;     ;; ((list* 'for val 'of array)               (rewrite m-iter-obj val nil array))
 	  ;;     ;; ((list* 'for val key 'of array)           (rewrite m-iter-obj val key array))
 	  ;;     ;; ((list* 'for 'own val key 'of array)      (rewrite m-iter-obj val key array :own t))
@@ -377,6 +310,7 @@ each element represents a closure and it contains variable list.")
 	  ((list 'try body 'catch (list error-var) error)              (rewrite m-try body error-var error))
 	  ((list 'try body 'catch (list error-var) error 'finally fin) (rewrite m-try body error-var error fin))
 	  ((list* 'try body _)                   (error "invalid try-catch statement"))
+	  ((list* obj '-. accessor)                  (rewrite m-direct-accessor obj accessor))
 	  ((list* obj '> accessor)                  (rewrite m-accessor obj accessor))
 	  ((list* obj '? accessor)                  (rewrite m-exist-accessor obj accessor))
 	  ((list* obj '-> accessor)                 (rewrite m-prototype-accessor obj accessor))
@@ -389,6 +323,6 @@ each element represents a closure and it contains variable list.")
 (defmacro maca (&body body)
   `(progn
 	 ,(if (= (length body) 1)
-		  `(m-compile t ',@body)
-		  `(m-compile t ',body))
+		  `(m-compile t nil ',@body)
+		  `(m-compile t nil ',body))
 	 (format t "~%")))
