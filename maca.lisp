@@ -20,7 +20,7 @@
     import int interface long native package private protected
     public short static super synchronized throws transient volatile))
 
-(defparameter *constants*
+(defparameter *aliases*
   '((t . true)
     (on . true)
     (yes . true)
@@ -62,11 +62,6 @@ each element represents a closure and it contains variable list.")
        (prints ,@then)
        (prints ,@else)))
 
-;; (defmacro defw (name args &rest contents)
-;;   (let ((args (append args (unless (member '&key args) '(&key)) '(must-return-value))))
-;;     `(defun ,name ,args
-;;        (prints ,@contents))))
-
 (defun gensym-js (&optional (thing "G"))
   (symbol-name (gensym thing)))
 
@@ -75,19 +70,22 @@ each element represents a closure and it contains variable list.")
 
 ;; helpers
 
-(defparameter *maca-rules* nil
-  "alist of name-rule pair")
+;; (defparameter *maca-rules* nil
+;;   "alist of name-rule pair")
 
-(defmacro defmaca (name args rule &body body)
-  (declare (ignore rule))
+(defvar newline (string #\Newline))
+
+(defmacro defmaca (name args &body body)
   `(defun ,name ,args
-     (m-compile ,@body)))
+     (m-compile ,body)))
 
 (defun m-glue (args)
-  (m-compile arg))
-(defw m-paren (arg) "(" (m-compile arg) ")")
-(defw m-block (arg) "{" (m-compile arg) "}")
-(defun m-comma (&rest args)
+  (format nil "~{~a~}" (mapcar #'m-compile args)))
+(defun m-paren (arg) 
+  (format nil "{~%~a}" (m-compile arg)))
+(defun m-block (args)
+  (format nil "{~%~a}" (m-compile arg)))
+(defun m-comma (args)
   (format nil "~{~a~^,~}" (mapcar #'m-compile args)))
 (defun m-sentences (sents)
   (format nil "~{~a;~%~}" (mapcar #'m-compile sents)))
@@ -100,27 +98,19 @@ each element represents a closure and it contains variable list.")
 	     ("var " (m-compile `(= ,var val)))
 	     ("var " (m-compile var))))
 
-;; (defw m-var (var val)
-;;   (if must-return-value
-;;       (prints "(var " (m-compile var) "=" (m-compile val) ")")
-;;       (prints "var " (m-compile var) "=" (m-compile val))))
-
-
-(defw m-return (&optional value)
-  "return " (m-compile value))
-
 ;; -----------------------------
 ;; function and function calls
-(defw m-function-call (op args)
-  (m-compile op)
-  (m-compile `(paren (comma ,@(mapcar #'m-compile args)))))
+(defmaca m-function-call (op args)
+  `(glue ,op (paren (comma ,@(mapcar #'m-compile args)))))
+;; -  (m-compile op)
+;; -  (m-compile `(paren (comma ,@(mapcar #'m-compile args)))))
 
 (defun m-args (&rest args)
   (let ((args (flatten args)))
     (cond ((not-uniquep args)
-	   (error (prints "duplicated argument in the list:" (not-unique args))))
+	   (error (prints "duplicated argument:" (not-unique args))))
 	  ((some #'(lambda (a) (not (symbolp a))) args)
-	   (error (prints "invalid argument in the list")))
+	   (error (prints "invalid argument")))
 	  (t (m-compile `(comma ,@args))))))
 
 (defw m-function (args body)
@@ -205,7 +195,8 @@ each element represents a closure and it contains variable list.")
 
 (defparameter *mono-ops*
   '(++ -- ^ ~ ! 
-    new set get typeof instanceof void delete var))
+    new set get typeof instanceof
+    void delete return))
 (defw m-mono-ops (op val)
   op " (" (m-compile val) ")")
 
@@ -254,6 +245,7 @@ each element represents a closure and it contains variable list.")
 ;; todo:
 ;;   add an enviromental valiable
 ;;   add "must-return-value" option
+
 (defun m-compile (lst)
   (if (null *env*)
       *env*
@@ -265,14 +257,12 @@ each element represents a closure and it contains variable list.")
     ((list* 'blk clauses)       (rewrite m-block clauses))
     ((list* 'glue clauses)       (rewrite m-glue clauses))
 
-    ((when (assoc val *constants*) (type atom val)) (cdr (assoc val *constants*)))
+    ((when (assoc val *aliases*) (type atom val)) (cdr (assoc val *aliases*)))
     ((type atom val) (values val 'atom))
     ((list 'var (or (type symbol v1)
-		    (type string v1)
-		    (type keyword v1)))  (rewrite m-var v1))
+		    (type string v1)))  (rewrite m-var v1))
     ((list 'var (or (type symbol v1)
-		    (type string v1)
-		    (type keyword v1)) v2)  (rewrite m-var v1 v2))
+		    (type string v1)) v2)  (rewrite m-var v1 v2))
     ((list* 'var _ rest)              (error "invalid variable name"))
     ((when (member op *assignments*) (list op v1 v2))  (rewrite m-assignments op v1 v2))
     ((when (member op *infixes*)     (list* op vars))  (rewrite m-infix op vars))
