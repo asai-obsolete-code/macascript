@@ -73,7 +73,7 @@ see 'test.maca' though its still a development code.
   + anaphora : I don't use it so much, but it's sometimes useful.
 
 ** run
-input these code to the interpriter: 
+input these code to the interpreter: 
 
        (load "maca.lisp")
        (in-package :maca)
