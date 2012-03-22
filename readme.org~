@@ -1,0 +1,63 @@
+
+
+
+* Yet another Javascript compiler Macascript
+
+Macascript is a simple javascript compiler which is inspired
+by parenscript and coffeescript.
+
+I wasn't satisfied with either of them, so I made it myself.
+
+The reason is that Parenscript doesn't seem to fit the need of
+javascript programmers. It is rather a utility for the lisp
+programmers who dinamically produces javascript on the server
+side. Parenscript is still just lisp while Coffeescript is trying to
+follow the rule "It's just JavaScript".  The syntax was more on the
+Lisp side, like loop and let. (of course you can now use 'let' in the
+javascript 1.8 or newer, but it is still not available on the platform
+like Titanium Mobile, which I'm currently writing js programs for.)
+
+Besides, it often produces invalid js code. (Note that I only mentions about the
+old version of parenscript because I haven't been watching the project
+recently) I wanted to fix that up, but the code! Parenscript's source
+code was a mess for me. I gave up instantly.
+
+Another motivation still. As you know, coffeescript is so cool. 
+It has the better, simple and beautiful syntax.
+It improved almost all of the bad points in javascript.
+
+However IT DOESN'T HAVE MACRO!!!!! 
+
+On the smartphone product, runtime speed is highly required for the
+user experience. And js is so slow compared with Obj-C or Java, the
+standard language for smartphone development. Only the compile-time
+macro can handle the stuff like inline function, js simplification,
+etc.
+
+* what's not implemented
+
+I'm currently handling the problem about namespace and environment.
+The future change may affect the way you declare a variable.
+Currently, just call 'var' macro for it, as you commonly do in js.
+
+* help me extend the syntax
+
+The macascript source code is really simple because the parsing of the
+S-expression tree relies on pattern matching provided with cl-match.
+
+Also my defmaca macro greatly helps you extend the syntax easily. All
+syntaxes but 'glue' and 'redundant-paren' are currently implemented
+with that macro. All macro will be finally compiled into 'glue'
+special macro, which just prints a series of atoms in its &rest
+arguments. It's really easy and almost identical to defmacro. 
+
+Have fun extending js syntax!
+
+* sample
+see 'test.maca'. its still a development code.
+
+
+
+* license
+
+Currently I haven't decided which license I should choose. 
