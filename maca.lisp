@@ -47,6 +47,11 @@
     (off . false)
     (no . false)
     (null . undefined)
+    (and . &&)
+    (or . |\|\||)
+    (and= . &=)
+    (not= . ^=)
+    (or= . |\|=|)
     (@ . this)
 	(newline . #\Newline)
 	(space   . #\Space)
@@ -82,20 +87,23 @@
 				   (t (format nil "~(~a~)" true-arg)))))
 		   args)))
 
-
 (defmaca m-paren (arg)
   `(glue lparen ,arg rparen))
+(defun m-redundant-paren (s env arg)
+  (m-compile s env `(paren ,arg)))
+(defmaca m-bracket (arg)
+  `(glue lbracket ,arg rbracket))
 (defmaca m-block (arg)
   `(glue lbrace newline ,arg rbrace))
 (defmaca m-comma (args)
   `(glue ,@(butlast 
-			(mapcan
-			 #'(lambda (arg) (list arg 'comma))
-			 args))))
+	    (mapcan
+	     #'(lambda (arg) (list arg 'comma))
+	     args))))
 (defmaca m-sentences (sents)
   `(glue ,@(mapcar
-			#'(lambda (sent) `(glue ,sent semicolon newline))
-			sents)))
+	    #'(lambda (sent) `(glue ,sent semicolon newline))
+	    sents)))
 
 ;; -----------------------------
 ;; keywords
@@ -103,6 +111,11 @@
 (defmaca m-var (var &optional val)
   `(glue var space
 		 ,(if val `(= ,var ,val) var)))
+
+
+(defmaca m-quote (val)
+  (format nil "~a" val))
+
 
 ;; -----------------------------
 ;; function and function calls
@@ -113,9 +126,9 @@
 (defmaca m-function (args body)
   (let ((args (flatten args)))
     (cond ((not-uniquep args)
-		   (error (prints "duplicated argument:" (not-unique args))))
+		   (error "duplicated argument: ~a" (not-unique args)))
 		  ((some #'(lambda (a) (not (symbolp a))) args)
-		   (error (prints "invalid argument")))
+		   (error "invalid argument"))
 		  (t 
 		   `(glue function (paren (comma ,@args))
 				  (blk 
@@ -147,8 +160,15 @@
 (defmaca m-? (condition then &optional (else 'undefined))
   `(glue (paren ,condition) ? (paren ,then) colon (paren ,else)))
 
-(defmaca m-exist-? (thing)
-  `(glue (? (!= thing null) ,thing (void 0))))
+(defmaca m-if-? (thing then &optional else)
+  `(if (and (!== ,thing null)
+	    (!== (typeof ,thing) "undefined"))
+       ,then
+       ,else))
+
+(defmaca m-assign-if-exist (to from)
+  `(if? ,to
+	(= ,to ,from)))
 
 (defmaca m-if (condition then &optional else)
   `(glue if (paren ,condition) (blk ,then) 
@@ -184,13 +204,13 @@
 ;; math and operators
 
 (defparameter *assignments*
-  '(= += -= *= /= <<= >>= >>>= &= ^= ))	;|= 
+  '(= += -= *= /= <<= >>= >>>= &= ^= |\|=| and= or= not=))	; 
 
 (defmaca m-assignments (op to from)
   `(glue ,to space ,op space ,from))
 
 (defparameter *infixes* 
-  '(+ - * / % << >> >>> && in)) 		;||
+  '(+ - * / % << >> >>> in && |\|\|| and or))
 
 (defmaca m-infix (op vars)
   `(paren (glue ,(car vars) space ,op space
@@ -214,7 +234,7 @@
     new set get typeof instanceof
     void delete return))
 (defmaca m-mono-ops (op val)
-  `(glue ,op space ,val))
+  `(paren (glue ,op space ,val)))
 
 ;; -----------------------------
 ;; array and object literals
@@ -236,36 +256,37 @@
 							alist)))
 		`(blk (comma ,@pairs)))))
 
-(defmaca m-direct-accessor (obj accessor)
-  `(glue ,obj
-		 lbracket
-		 ,(if (cdr accessor)
-			  accessor
-			  (car accessor))
-		 rbracket))
-
+;; input: (obj > 'child > grandchild ...)
+;; output: obj[child].grandchild...
+;; obj: obj
+;; accessor: ( 'child > grandchild ... )
+;; (cddr accessor): (grandchild > ...) or nil
+(defmaca m-direct-accessor (obj accessor) 
+  `(glue ,obj (bracket ,(car accessor))
+	 period
+	 ,(cddr accessor)))
 
 (defmaca m-accessor (obj accessor)
   `(glue ,obj period
-		 ,(if (cdr accessor)
-			  accessor
-			  (car accessor))))
+	 ,(if (cdr accessor)
+	      accessor
+	      (car accessor))))
 
-(defmaca m-exist-accessor (obj accessor) ; &key env
+(defmaca m-exist-accessor (obj accessor)
   (let ((ref (gensym))
-		(child (car accessor)))
-	`(glue (? (!= (paren (= ,ref (,obj > ,child)))
-							   null)
-						   ,(if (cdr accessor)
-								`(,ref . ,(cdr accessor))
-								ref)
-						   (void 0)))))
+	(child (car accessor)))
+    `(? (!= (paren (= ,ref (,obj > ,child)))
+		  null)
+	      ,(if (cdr accessor)
+		   `(,ref . ,(cdr accessor))
+		   ref)
+	      (void 0))))
 
 (defmaca m-prototype-accessor (obj accessor)
-  `(glue ,obj period prototype period
-		 ,(if (cdr accessor) 
-			  accessor
-			  (car accessor))))
+  `(,obj > prototype >
+	 ,(if (cdr accessor) 
+	      accessor
+	      (car accessor))))
 
 ;; -----------------------------
 ;; main compilation
@@ -274,6 +295,17 @@
 ;;   add an enviromental valiable
 ;;   add "must-return-value" option
 
+;; defpattern test
+;; (defpattern my-list rest
+;;   `(list ,@rest))
+;; (ifmatch (my-list a b a) '(1 2 2) t nil)
+
+(defpattern direct-specifier (child)
+  `(or (list 'quote ,child)
+       (type string ,child)
+       (type number ,child)
+       (type keyword ,child)))
+
 (defun m-compile (s env lst)
   (macrolet ((rewrite (name &rest args)
 			   `(values (,name s env ,@args) ',name)))
@@ -281,9 +313,13 @@
 	  ;; these operators are just meant to be used by the compiler
 	  ;; don't use it
 	  ((list* 'glue clauses)    (rewrite m-glue clauses))
+	  ((list 'paren (list 'paren clause)) (rewrite m-redundant-paren clause))
 	  ((list 'paren clause)     (rewrite m-paren clause))
+	  ((list 'bracket clause)     (rewrite m-bracket clause))
 	  ((list* 'comma clauses)   (rewrite m-comma clauses))
 	  ((list 'blk clause)     (rewrite m-block clause))
+
+	  ((list 'quote val) (rewrite m-quote val))
 
 	  ((type atom val) (values (m-glue s env (list val)) (type-of val)))
 	  ((list 'var (type symbol v1)) (rewrite m-var v1))
@@ -307,13 +343,18 @@
 	  ;;     ;; ((list* 'for 'own val key 'of array)      (rewrite m-iter-obj val key array :own t))
 	  ((list 'if cond then)                     (rewrite m-if cond then))
 	  ((list 'if cond then else)                (rewrite m-if cond then else))
+	  ((list 'if? thing then)                     (rewrite m-if-? thing then))
+	  ((list 'if? thing then else)                (rewrite m-if-? thing then else))
+	  ((list '?= to from)                     (rewrite m-assign-if-exist to from))
+
 	  ((list 'try body 'catch (list error-var) error)              (rewrite m-try body error-var error))
 	  ((list 'try body 'catch (list error-var) error 'finally fin) (rewrite m-try body error-var error fin))
 	  ((list* 'try body _)                   (error "invalid try-catch statement"))
-	  ((list* obj '-. accessor)                  (rewrite m-direct-accessor obj accessor))
-	  ((list* obj '> accessor)                  (rewrite m-accessor obj accessor))
-	  ((list* obj '? accessor)                  (rewrite m-exist-accessor obj accessor))
-	  ((list* obj '-> accessor)                 (rewrite m-prototype-accessor obj accessor))
+
+	  ((list* obj '> (direct-specifier more))  (rewrite m-direct-accessor obj more))
+	  ((list* obj '> more)                     (rewrite m-accessor obj more))
+	  ((list* obj '? more)                      (rewrite m-exist-accessor obj more))
+	  ((list* obj '>> more)                     (rewrite m-prototype-accessor obj more))
 	  ((list* (type keyword key) rest)          (rewrite m-obj lst))
 	  ;;     ((quote 
 	  ((list* (type atom op) arguments)         (rewrite m-function-call op arguments))
@@ -322,7 +363,10 @@
 
 (defmacro maca (&body body)
   `(progn
+     (multiple-value-bind (value type)
 	 ,(if (= (length body) 1)
-		  `(m-compile t nil ',@body)
-		  `(m-compile t nil ',body))
-	 (format t "~%")))
+	      `(m-compile t nil ',@body)
+	      `(m-compile t nil ',body))
+       (declare (ignore value))
+       (format t "~%")
+       type)))
