@@ -24,6 +24,10 @@
 (defun uniquep (lst &key (test #'eq))
   (not (not-uniquep lst :test test)))
 
+(defmacro rmapcar (lst &body fn)
+  (when (cdr fn) (error "not valid rmapcar"))
+  `(mapcar ,@fn ,lst))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rewriter
 
@@ -47,6 +51,7 @@
     (off . false)
     (no . false)
     (null . undefined)
+    (not . !)
     (and . &&)
     (or . |\|\||)
     (and= . &=)
@@ -118,6 +123,9 @@
   `(glue var space
 	 ,(if val `(= ,var ,val) var)))
 
+(defmaca m-alias-this (val)
+  (let ((property (make-symbol (subseq (symbol-name val) 1))))
+  `(this > ,property)))
 
 (defmaca m-quote (val)
   (format nil "~a" val))
@@ -142,6 +150,19 @@
 		   ((// ,env)
 		    ,@(butlast body)
 		    (return ,(car (last body))))))))))
+
+(defmaca m-procedure-function (args body)
+  (let ((args (flatten args)))
+    (cond ((not-uniquep args)
+	   (error "duplicated argument: ~a" (not-unique args)))
+	  ((some #'(lambda (a) (not (symbolp a))) args)
+	   (error "invalid argument"))
+	  (t 
+	   (push args env)
+	   `(glue function (paren (comma ,@args))
+		  (blk 
+		   ((// ,env)
+		    ,@body)))))))
 
 ;; ;; not implemented
 ;; (defw m-inherit-this-function (args body)
@@ -210,6 +231,32 @@
 	      ,@(when own `((if (! (,val > (hasOwnProperty ,key))) (continue))))
 	      ,@body))))))
 
+(defmaca m-while (condition body)
+  `(glue while (paren ,condition)
+	 (blk ,body)))
+
+(defmaca m-do-while (condition body)
+  `(glue do (blk ,body)
+	 while
+	 (paren ,condition)))
+
+(defmaca m-label (name body)
+  `(glue label ,name colon
+	 (blk ,body)))
+
+(defmaca m-switch (val conditions)
+  `(glue switch (paren ,val)
+	 (blk ,conditions)))
+
+(defmaca m-cases (vals body)
+  `(glue ,@(mapcan #'(lambda (val) (list 'newline 'case 'space val 'colon)) vals)
+	 ,@body break))
+(defmaca m-case (val body)
+  `(glue case space ,val colon ,@body break))
+
+(defmaca m-default (body)
+  `(glue default colon ,body))
+
 ;; -----------------------------
 ;; try/catch expression
 
@@ -252,11 +299,11 @@
 
 
 (defparameter *mono-ops*
-  '(++ -- ^ ~ ! 
+  '(++ -- ^ ~ ! not
     new set get typeof instanceof
-    void delete return))
-(defmaca m-mono-ops (op val)
-  `(paren (glue ,op space ,val)))
+    void delete))
+(defmaca m-mono-ops (op &optional val)
+  `(paren (glue ,op space ,@(when val (list val)))))
 
 ;; -----------------------------
 ;; array and object literals
@@ -339,12 +386,16 @@
       ((list 'blk clause)     (rewrite m-block clause))
       ((list '// str) (rewrite m-comment str))
 
+      ((when (char= #\@ (aref (symbol-name val) 0)) (type symbol val))
+       (rewrite m-alias-this val))
+
       ((type atom val) (values (m-glue s env (list val)) (type-of val)))
       ((list 'var (type symbol v1)) (rewrite m-var v1))
       ((list 'var (type symbol v1) v2)  (rewrite m-var v1 v2))
       ((list* 'var _ rest)              (error "invalid variable name"))
       ((when (member op *assignments*) (list op v1 v2))  (rewrite m-assignments op v1 v2))
       ((when (member op *infixes*)     (list* op vars))  (rewrite m-infix op vars))
+      ((when (member op *mono-ops*)    (list op))    (rewrite m-mono-ops op))
       ((when (member op *mono-ops*)    (list op var))    (rewrite m-mono-ops op var))
       ((when (member op *comparisons*) (list* op vars))  (rewrite m-comparison op vars))
       ((list '? thing)                 (rewrite m-exist-? thing))
@@ -352,7 +403,7 @@
       ;;     ;; ((list 'set var val)                      (rewrite m-set var val))
       ((list* '-> (list* args) body)            (rewrite m-function args body))
       ;;     ((list* '=> (list* args) body)            (rewrite m-inherit-this-function args body))
-      ;;     ((list* '-/> (list* args) body)           (rewrite m-procedure-function args body))
+      ((list* '-/> (list* args) body)           (rewrite m-procedure-function args body))
       ;;     ((list* '-/  (list* args) body)           (rewrite m-inline-function args body))
 
       ((list* 'for val 'in array body)          (rewrite m-iter-array val array body))
@@ -368,6 +419,18 @@
       ((list 'if? thing then)                     (rewrite m-if-? thing then))
       ((list 'if? thing then else)                (rewrite m-if-? thing then else))
       ((list '?= to from)                     (rewrite m-assign-if-exist to from))
+
+      ((list 'while cond then) (rewrite m-while cond then))
+      ((list* 'while _) (error "invalid while statement"))
+      ((list 'do then 'while cond) (rewrite m-do-while cond then))
+      ((list* 'do _)  (error "invalid do-while statement"))
+
+      ((list* 'switch val conditions)	      (rewrite m-switch val conditions))
+      ((list* 'case val body)	      (rewrite m-case val body))
+      ((list* 'cases (list* vals) body)	      (rewrite m-cases vals body))
+      ((list* 'cases _ body)	      (error "invalid cases"))
+      ((list* 'default body)	      (rewrite m-default body))
+      
 
       ((list 'try body 'catch (list error-var) error)              (rewrite m-try body error-var error))
       ((list 'try body 'catch (list error-var) error 'finally fin) (rewrite m-try body error-var error fin))

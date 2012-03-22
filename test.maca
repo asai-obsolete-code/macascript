@@ -67,9 +67,23 @@
 (maca (in 5 array))
 
 ;; function definition
+
+;; normal function: returns the final expression
 (maca (-> (a b c)
 	  (= d (- a b c))
 	  (+ a b c d)))
+
+;; procedure function: returns undefined
+(maca (-/> (a b c)
+	  (= d (- a b c))
+	  (+ a b c d)))
+
+;; inherit-this function: saves 'this' of the outer environment
+(maca ((= (this > a) 2)
+       (($ "button") 		;jquery
+	> (click (=> (e)
+		     (alert (this > 2)))))))
+
 
 ;; conditional expression
 (maca (if (a b c)
@@ -105,6 +119,8 @@
 (maca (obj > 2 > "key"))
 (maca (obj > 'key))
 (maca (obj > :key))
+
+(maca @a) ;is identical to (maca (this > a))
 
 (maca (obj >> child > grandchild))
 (maca (obj >> (method a)))
@@ -151,6 +167,47 @@
 	(alert "hello!")
 	(alert i)))
 
+;; while and do-while
+
+;; bad methodology
+(maca (while true
+	((alert "Let's do it tomorrow")
+	 (alert "Let's do it tomorrow"))))
+
+;; good methodology
+(maca (do 
+       ((alert "Let's do it now")
+	(alert "hush hush")
+	(alert "hush hush"))
+       while (not tired)))
+
+;; errors
+(maca (while true
+	(alert "Let's do it tomorrow")
+	(alert "Let's do it tomorrow")))
+(maca (do 
+       (alert "Let's do it now")
+       (alert "hush hush")
+	(alert "hush hush")
+       while (not tired)))
+
+;; switch
+(maca (switch x
+	(case 1
+	  (alert x))			;1 case 1 statement
+	(case 2				;1 case 2 statements
+	  (alert 22)
+	  (alert 22))
+	(cases (3 4)			;2 cases 1 statements
+	       (alert x))
+	(cases ((sqrt 2)
+		(sqrt 3))	        ;2 cases 2 statements
+	       (alert x) 
+	       (alert x))
+	(default
+	    (alert "default")
+	    (alert "default")
+	  (alert "default"))))	;defaults
 
 
 
@@ -186,8 +243,10 @@
 
 
 
-
-
+;; 
+;; these script below are just a sketch which i wrote before the implementation.
+;; these are no more valid now.
+;; however, some ideas like 'set' are what i want to implement soon.
 
 
 
