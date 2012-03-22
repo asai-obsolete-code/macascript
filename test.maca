@@ -12,18 +12,14 @@
 ;; fundamentals
 
 (maca (glue a 2 space "string" semicolon))
-
-;; glueを外から見えないようにしないとエラーが出る
 (maca (paren a))
-
 (maca (paren (paren a)))			;reduces redundancy automatically
 (maca (paren (paren (paren a))))			;reduces redundancy automatically
-
 (maca (comma (comma a b c) (comma a b c)))
 (maca (comma a b c))
 (maca (blk ((a b c))))
-
 (maca (bracket a))
+(maca (a b (raw-string "aaa vvv") c))
 
 ;; constants
 (maca undefined)
@@ -38,12 +34,7 @@
 (maca (var number))
 (maca (var (+ 2 1) 3))					;error
 
-;; quote
-(maca 'undefined)
-(maca '(= number 3))
-
-;; comment
-
+;; comments (if you want to include some comment into js)
 (maca (// "haaa~~~~ this is comfortable"))
 (maca (// a))
 
@@ -69,21 +60,45 @@
 ;; function definition
 
 ;; normal function: returns the final expression
+
 (maca (-> (a b c)
 	  (= d (- a b c))
-	  (+ a b c d)))
+	  (var e 2)
+	  (+ a b c d e)))
+
+(maca (-> (a)
+	  (alert a)
+	  (-> (b)
+	      (if (< b 3)
+		  (var a (- 3 b))
+		  (var a (- b 3)))
+	      (var c (+ a 3))
+	      (alert a b)
+	      a)))
+
 
 ;; procedure function: returns undefined
 (maca (-/> (a b c)
-	  (= d (- a b c))
-	  (+ a b c d)))
+	   (var d (- a b c))
+	   (var e (+ a b c d))))
 
 ;; inherit-this function: saves 'this' of the outer environment
-(maca ((= (this > a) 2)
-       (($ "button") 		;jquery
-	> (click (=> (e)
-		     (alert (this > 2)))))))
+(maca (= @a 2)
+      (($ "button") > (click (=> (e) (alert (this > 2))))))
 
+;; inline function: they are directly expanded into the environment
+(maca (foo)
+      (bar foo)
+      (-/ baz (a b) (+ a 2 b))
+      (= foo (baz foo bar))
+      (= bar (baz 1 (baz foo bar)))
+
+;; -> identical to
+(maca (foo)
+      (bar foo)
+      (= foo (+ foo 2 bar))
+      (= bar (+ 1 2 (+ foo 2 bar))))
+      
 
 ;; conditional expression
 (maca (if (a b c)
@@ -104,13 +119,17 @@
 
 (maca (? a b c))
 
-
+;; true if it's not undefined
 (maca (if? a b c))
 
-;; (maca (? a)) ;;deprecated
+;; Literals
+
+;; array literal
+(maca '(a (b c) (+ 1 2 3)))
+;; object literal
+(maca (:a a :b (b c) :c (+ 1 2 3)))
 
 ;; object accessor
-(maca (:a a :b (b c) :c (+ 1 2 3)))
 (maca (obj > attibute))
 (maca (obj > child > grandchild))
 (maca (granpa > parent > obj > child > grandchild))
@@ -122,17 +141,17 @@
 
 (maca @a) ;is identical to (maca (this > a))
 
+;; prototype accessor
 (maca (obj >> child > grandchild))
 (maca (obj >> (method a)))
 (maca (obj >>))
 
+;; existantial accessor
 (maca (a ? b))
 (maca (a ? b ? c))
-
 (maca (a > b ? c ? d > (e) > (f) ?  g >> h))
 
 ;; try-catch-finally
-
 (maca (try ((drink 3 "beer")
 	    (eat 5 pizza))
 	   catch (x)
