@@ -61,7 +61,7 @@ see 'test.maca' though its still a development code.
 * how to try
 
 ** recommended software
-+ [[http://www.sbcl.org/][sbcl]] : The only lisp implimentation I tested.
++ [[http://www.sbcl.org/][sbcl]] : The only lisp implimentation I've tested.
 + [[http://www.quicklisp.org/][quicklisp]] : great software.
 + [[http://common-lisp.net/project/slime/][slime]] : I greatly recommend you to install it if you are using
   emacs. I'm an emacs user and don't know well about vim, so if you
