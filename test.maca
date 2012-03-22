@@ -113,33 +113,43 @@
 (maca (a ? b))
 (maca (a ? b ? c))
 
-(maca (a > b ? c ? d > (e) > (f) ?  g -> h))
+(maca (a > b ? c ? d > (e) > (f) ?  g >> h))
 
 ;; try-catch-finally
 
 (maca (try ((drink 3 "beer")
-			(eat 5 pizza))
-		   catch (x)
-		   ((if (== x "drunkTooMuch")
-				(puke)
-				(take digestive)))
-		   finally
-		   ((pay money)
-			(go home))))
+	    (eat 5 pizza))
+	   catch (x)
+	   ((if (== x "drunkTooMuch")
+		(puke)
+		(take digestive)))
+	   finally
+	   ((pay money)
+	    (go home))))
 
 ;; iteration
 
 (maca (for elem in ary
-		   (alert elem)))
+	   (alert elem)))
 (maca (for elem i in ary
-		   (alert elem i)))
+	   (alert elem i)))
 
+(maca (for elem of obj
+	   (alert elem)))
+(maca (for elem key of ary
+	   (alert elem i)))
 
+(maca (for own elem key of ary
+	   (alert elem i)))
 
+(maca (for own elem of ary
+	   (alert elem i)))
 
-
-
-
+(maca (for ((var i 0)
+	    (< i 10)
+	    (++ i))
+	(alert "hello!")
+	(alert i)))
 
 
 
@@ -293,7 +303,7 @@
 
 ;; it returns a value if it should
 (for num in list
-  (math > cube num))
+     (math > cube num))
 
 
 ;; destructuring-bind is almost the same as common-lisp but its 
@@ -301,7 +311,7 @@
 ;; 
 ;; bind creates a closure.
 (bind (x y) (/ a b)
-  (dosomething))
+      (dosomething))
 
 ;; this does not create a closure. the argument should be quoted
 (set '(x y) (/ a b))
@@ -310,11 +320,11 @@
 ;; it throws an error if the first argument does not return Object.
 
 (set setfary 
-	 (setf->
-	  (-> (ary x) (ary > x))	; return ary[x]
-	  (-> (ary x)
-		  (-> (value)
-			  (set (ary > x) value)))))
+     (setf->
+      (-> (ary x) (ary > x))	; return ary[x]
+      (-> (ary x)
+	  (-> (value)
+	      (set (ary > x) value)))))
 
 
 ;; At last, of course, MACRO. 
@@ -322,7 +332,7 @@
 ;; ONLY IN THE COMPILATION TIME does Maca turn out to be a lisp.
 
 (defmacro (valname &body body)
-	(let ((x (gensym)))
-	  `(let ((,x 3))
-		 (print ,x)
-		 ,@body)))
+    (let ((x (gensym)))
+      `(let ((,x 3))
+	 (print ,x)
+	 ,@body)))
