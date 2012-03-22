@@ -7,7 +7,7 @@ I wasn't satisfied with either of them, so I made it myself.
 
 The reason is that Parenscript doesn't seem to fit the need of
 javascript programmers. It is rather a utility for the lisp
-programmers who dinamically produces javascript on the server
+programmers who dynamically produces javascript on the server
 side. Parenscript is still just lisp while Coffeescript is trying to
 follow the rule "It's just JavaScript".  The syntax was more on the
 Lisp side, like loop and let. (of course you can now use 'let' in the
@@ -31,7 +31,7 @@ standard language for smartphone development. Only the compile-time
 macro can handle the stuff like inline function, js simplification,
 etc.
 
-Moreover, since coffeescript TRYES TO OMIT PARENTHESIS, it must use
+Moreover, since coffeescript TRIES TO OMIT PARENTHESIS, it must use
 the parser. It makes the source code complicated and PROCEDURAL.
 
 * what's not implemented
