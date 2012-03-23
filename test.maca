@@ -57,8 +57,13 @@
 ;; in
 (maca (in 5 array))
 
-;; function definition
+;; global scope(bare)
+(maca (a b c)
+      (= d (- a b c))
+      (var e 2)
+      (+ a b c d e))
 
+;; function definition
 ;; normal function: returns the final expression
 
 (maca (-> (a b c)
@@ -87,18 +92,20 @@
       (($ "button") > (click (=> (e) (alert (this > 2))))))
 
 ;; inline function: they are directly expanded into the environment
+;; this example is ok
 (maca (foo)
       (bar foo)
-      (-/ baz (a b) (+ a 2 b))
-      (= foo (baz foo bar))
-      (= bar (baz 1 (baz foo bar)))
+      (-/ baz (a b) (+ (some-operation a)
+		       (other-operation b)))
+      (= foo (baz foo bar)))
 
-;; -> identical to
+;; this is not ok
 (maca (foo)
       (bar foo)
-      (= foo (+ foo 2 bar))
-      (= bar (+ 1 2 (+ foo 2 bar))))
-      
+      (-/ baz (a b) (+ (some-operation a)
+		       (other-operation b)))
+      (= foo (baz foo bar))
+      (= bar (baz 1 (baz foo bar))))
 
 ;; conditional expression
 (maca (if (a b c)

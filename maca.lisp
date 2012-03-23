@@ -150,10 +150,6 @@
 ;; -----------------------------
 ;; function and function calls
 
-(defmaca m-function-call (op args)
-  `(glue ,op (paren (comma ,@args))))
-
-
 (defstruct closure
   (arguments nil)
   (variables nil)
@@ -174,9 +170,9 @@
 (defmaca m-global (body)
   (let* ((cl (make-closure))
 	 (raw (compile-in-advance (cons cl env) body)))
-    `(,(aif (closure-variables cl) `(glue var space (comma ,@(uniquify it))))
-       ,@(closure-initializations cl)
-       ,raw)))
+    `(glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
+	   (,@(nreverse (closure-initializations cl)))
+	   ,raw)))
 
 
 (defmaca m-function (args body)
@@ -186,35 +182,72 @@
 		   (raw (compile-in-advance (cons cl env)
 					    `(,@(butlast body)
 						(return ,(car (last body)))))))
-		  `(blk (,(aif (closure-variables cl) `(glue var space (comma ,@(uniquify it))))
-			  ,@(closure-initializations cl)
-			  ,raw))))))
+		  `(blk (glue ,(aif (closure-variables cl) 
+				    `((glue var space (comma ,@(uniquify it)))))
+			      (,@(nreverse (closure-initializations cl)))
+			      ,raw))))))
 
 (defmaca m-procedure-function (args body)
   (check-args args
     `(glue function (paren (comma ,@args))
 	   ,(let* ((cl (make-closure :arguments args))
 		   (raw (compile-in-advance (cons cl env) body)))
-		  `(blk (,(aif (closure-variables cl) `(glue var space (comma ,@(uniquify it))))
-			  ,@(closure-initializations cl)
-			  ,raw))))))
+		  `(blk (glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
+			      (,@(nreverse (closure-initializations cl)))
+			      ,raw))))))
+
+(defun insert-initialization (cl &rest var-val-plist)
+  (labels ((rec (plist)
+	     (let ((var (car plist))
+		   (val (cadr plist)))
+	       (push var (closure-variables cl))
+	       (push `(= ,var ,val) (closure-initializations cl)))
+	     (when (cddr plist)
+	       (rec (cddr plist)))))
+    (rec var-val-plist)))
 
 (defmaca m-inherit-this-function (args body)
   (let ((this (gensym "t"))
 	(fn (gensym "f")))
-    (push this (closure-variables (car env)))
-    (push fn (closure-variables (car env)))
-    (push `(= ,this this) (closure-initializations (car env)))
-    (push `(= ,fn (-> ,args
-		      ,@(subst this 'this body)))
-	  (closure-initializations (car env)))
+    (insert-initialization
+     (car env)
+     this 'this 
+     fn `(-> ,args ,@(subst this 'this body)))
     fn))
 
-;; (defun inline (op args)
-  
-
 (defmaca m-inline-function (name args body)
-  (setf (getf (closure-inline-lambda (car env)) name) (cons args body)))
+  (setf (getf (closure-inline-lambda (car env)) name) (cons args body))
+  nil)
+
+(defun search-lambda (name env)
+  (if env
+      (aif (getf (closure-inline-lambda (car env)) name)
+	   (values it (car env))
+	   (search-lambda name (cdr env)))
+      (values nil nil)))
+
+(defun expand-inline (name args env)
+  (multiple-value-bind (lmb found-cl) (search-lambda name env)
+    (when lmb
+      (destructuring-bind (lambda-list . body) lmb
+	(let ((temps (mapcar #'(lambda (x) (declare (ignore x)) (gensym "TMP"))
+			     lambda-list))
+	      (copying-script nil))
+	  (loop
+	     for arg in args
+	     for temp in temps
+	     for param in lambda-list
+	     do (setf body (subst temp param body))
+	     do (push temp (closure-variables found-cl))
+	     do (push `(= ,temp ,arg) copying-script))
+	  `(paren (comma ,@copying-script
+			 ,@body)))))))
+
+(defmaca m-function-call (op args)
+  (aif (expand-inline op args env)
+       it
+       `(glue ,op (paren (comma ,@args)))))
+
   
 ;; -----------------------------
 ;; iteration and conditional expression
@@ -427,13 +460,11 @@
       ((when (member op *mono-ops*)    (list op))    (rewrite m-mono-ops op))
       ((when (member op *mono-ops*)    (list op var))    (rewrite m-mono-ops op var))
       ((when (member op *comparisons*) (list* op vars))  (rewrite m-comparison op vars))
-      ((list '? thing)                 (rewrite m-exist-? thing))
-      ((list '? cond then else)                 (rewrite m-? cond then else))
-      ;;     ;; ((list 'set var val)                      (rewrite m-set var val))
+            ;;     ;; ((list 'set var val)                      (rewrite m-set var val))
       ((list* '-> (list* args) body)            (rewrite m-function args body))
       ((list* '=> (list* args) body)            (rewrite m-inherit-this-function args body))
       ((list* '-/> (list* args) body)           (rewrite m-procedure-function args body))
-      ;; ((list* '-/ name (list* args) body)           (rewrite m-inline-function name args body))
+      ((list* '-/ name (list* args) body)           (rewrite m-inline-function name args body))
 
       ((list* 'for val 'in array body)          (rewrite m-iter-array val array body))
       ((list* 'for val key 'in array body)      (rewrite m-iter-array val array body :key key))
@@ -446,6 +477,7 @@
       ((list* 'for 'own val key 'of array body) (rewrite m-iter-obj val array body :key key :own t))
       ((list* 'for (list begin condition next) body) (rewrite m-for begin condition next body))
 
+      ((list '? cond then else)                 (rewrite m-? cond then else))
       ((list 'if cond then)                     (rewrite m-if cond then))
       ((list 'if cond then else)                (rewrite m-if cond then else))
       ((list 'if? thing then)                     (rewrite m-if-? thing then))
