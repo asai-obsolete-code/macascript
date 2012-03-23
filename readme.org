@@ -35,13 +35,7 @@ Moreover, since coffeescript TRIES TO OMIT PARENTHESES, it must use
 the parser. It makes the source code complicated and
 PROCEDURAL. Procedual, so its not easy to extend.
 
-* what's not implemented
-
-I'm currently handling the problem about namespace and environment.
-The future change may affect the way you declare a variable.
-Currently, just call 'var' macro for it, as you commonly do in js.
-
-* help me extend the syntax
+* Help me extend the syntax
 
 The macascript source code is really simple because the parsing of the
 S-expression tree relies on pattern matching provided with cl-match.
@@ -56,10 +50,248 @@ easy and fun to use.
 
 Have fun extending js syntax and help me!
 
-* sample
-see 'test.maca' though its still a development code.
+* Example
 
-* how to try
+#+srcname: maca-example
+#+begin_src common-lisp
+(maca (-> (a)
+	  (if (a b c)			;multi-line then/else
+	      ((var d (- a b c))	;infix argument and var declaration
+	       (var e (== a b c d)))		      ; multiple comparison
+	      ((var f '(a (b c) (+ 1 2 3)))           ; array literal
+	       (var g (:a a :b (b c) :c (+ 1 2 3))))) ; object literal
+	  ;; true if it's not undefined
+	  (if? a b c)
+
+	  ;; object accessor
+	  (obj > attibute)
+	  (granpa > parent > obj > child > grandchild)
+	  ;; using methods 
+	  (obj > (child 2) > (grandchild 3 4 5))
+	  ;; direct access with []
+	  (obj > 2 > "key" > 'key > :key)
+	  ;; prototype accessor
+	  (obj >> child > grandchild)
+	  (obj >> (method a))
+	  (obj >>)
+	  ;; existantial accessor
+	  (a ? b ? c)
+
+	  ;; inline argument: maca expands it safely
+	  (-/ baz (a b) (+ (some-operation a) (other-operation b)))
+	  (= foo (baz foo bar))
+
+	  ;; procedure function: a function without implicit return
+	  (-/> (b)
+	      (if (< b 3)
+		  (var a (- 3 b))
+		  (var a (- b 3)))	;var keyword will be compacted at the beginning of function
+	      (= @a 2)			;alias for this[a]
+	      
+	      ;; inherit-this function (=>): saves 'this' of the outer environment 
+	      (($ "button") > (click (=> (e) (alert (this > 2))))))
+
+	  ;; try-catch-finally
+	  (try ((drink 3 "beer")
+		(eat 5 pizza))
+	       catch (x)
+	       ((if (== x "drunkTooMuch")
+		    (puke)
+		    (take digestive)))
+	       finally
+	       ((pay money)
+		(go home)))
+
+	  ;; iteration
+	  (for elem in ary         (alert elem))
+	  (for elem i in ary       (alert elem i))
+	  (for elem of obj         (alert elem))
+	  (for elem key of ary     (alert elem i))
+	  (for own elem key of ary (alert elem i))
+	  (for own elem of ary     (alert elem i))
+	  (for ((var i 0) (< i 10) (++ i))
+	    (alert "hello!")
+	    (alert i))
+
+	  ;; while and do-while
+	  (while true
+	    ((alert "Let's do it tomorrow")
+	     (alert "Let's do it tomorrow")))
+
+	  ;; good methodology
+	  (do 
+	   ((alert "Let's do it now")
+	    (alert "hush hush")
+	    (alert "hush hush"))
+	   while (not tired)) ;; not is an alias for !
+
+	  ;; switch
+	  (switch x
+	    (case 1
+	      (alert x))			;1 case 1 statement
+	    (case 2				;1 case 2 statements
+	      (alert 22)
+	      (alert 22))
+	    (cases (3 4)			;2 cases 1 statements
+		   (alert x))
+	    (cases ((sqrt 2)
+		    (sqrt 3))	        ;2 cases 2 statements
+		   (alert x) 
+		   (alert x))
+	    (default
+		(alert "default")
+		(alert "default")
+	      (alert "default")))	;defaults
+	  
+	  ;; implicit return
+	  a))
+#+end_src
+
+output:
+#+srcname: maca-compiled
+#+begin_src javascript
+function(a){
+var d,e,f,g,tmp1658,tmp1659,g1664,ref1666,l1665,ref1668,l1667,g1669,ref1670,ref1671,key,ref1672,elem,own,ref1673,i;
+if(a(b,c)){
+d = (a - (b - c));
+e = (a==b)&&(b==c)&&(c==d);
+}else({
+f = [a,b(c),(1 + (2 + 3))];
+g = {
+c:(1 + (2 + 3)),b:b(c),a:a};
+});
+if(((a!==undefined) && ((typeof a)!=="undefined"))){
+b}else({
+c});
+obj.attibute;
+granpa.parent.obj.child.grandchild;
+obj.child(2).grandchild(3,4,5);
+obj[2]["key"][key][key];
+;
+foo = (tmp1659 = bar,tmp1658 = foo,(some-operation(tmp1658) + other-operation(tmp1659)));
+function(b){
+var a,t1660,f1661;
+t1660 = this;
+f1661 = function(e){
+return(alert(t1660[2]));
+};
+if((b<3)){
+a = (3 - b)}else({
+a = (b - 3)});
+@a = 2;
+$("button").click(f1661);
+};
+obj.prototype.child.grandchild;
+obj.prototype.method(a);
+obj.prototype;
+(((g1662 = a.b)!=undefined))?((((g1663 = g1662.c)!=undefined))?(g1663):((void 0))):((void 0));
+try{
+drink(3,"beer");
+eat(5,pizza);
+}catch(x){
+if((x=="drunkTooMuch")){
+puke()}else({
+take(digestive)});
+}finally{
+pay(money);
+go(home);
+};
+;
+;
+ref1666 = ary;
+l1665 = ref1666.length;
+for(g1664 = 0;
+(g1664<l1665);
+(++ g1664);
+){
+elem = ref1666(-.,g1664);
+alert(elem);
+};
+;
+;
+;
+ref1668 = ary;
+l1667 = ref1668.length;
+for(i = 0;
+(i<l1667);
+(++ i);
+){
+elem = ref1668(-.,i);
+alert(elem,i);
+};
+;
+;
+;
+ref1670 = obj;
+for((g1669 in obj)){
+elem = ref1670[g1669];
+alert(elem);
+};
+;
+;
+;
+ref1671 = ary;
+for((key in ary)){
+elem = ref1671[key];
+alert(elem,i);
+};
+;
+;
+;
+ref1672 = ary;
+for((key in ary)){
+elem = ref1672[key];
+if((! elem.hasownproperty(key))){
+continue()};
+alert(elem,i);
+};
+;
+;
+;
+ref1673 = ary;
+for((elem in ary)){
+own = ref1673[elem];
+alert(elem,i);
+};
+;
+for(i = 0;
+(i<10);
+(++ i);
+){
+alert("hello!");
+alert(i);
+};
+while(true){
+alert("Let's do it tomorrow");
+alert("Let's do it tomorrow");
+};
+do{
+alert("Let's do it now");
+alert("hush hush");
+alert("hush hush");
+}while((! tired));
+switch(x){
+case 1:alert(x)break;
+case 2:alert(22)alert(22)break;
+
+case 3:
+case 4:alert(x)break;
+
+case sqrt(2):
+case sqrt(3):alert(x)alert(x)break;
+default:alert("default");
+alert("default");
+alert("default");
+;
+};
+return(a);
+}
+
+#+end_src
+
+see test.maca for more examples.
+
+* How to try
 
 ** recommended software
 + [[http://www.sbcl.org/][sbcl]] : The only lisp implimentation I've tested.

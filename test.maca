@@ -1,4 +1,109 @@
 
+
+
+
+(maca (-> (a)
+	  (if (a b c)			;multi-line then/else
+	      ((var d (- a b c))	;infix argument and var declaration
+	       (var e (== a b c d)))		      ; multiple comparison
+	      ((var f '(a (b c) (+ 1 2 3)))           ; array literal
+	       (var g (:a a :b (b c) :c (+ 1 2 3))))) ; object literal
+
+	  ;; true if it's not undefined
+	  (if? a b c)
+
+	  ;; object accessor
+	  (obj > attibute)
+	  (granpa > parent > obj > child > grandchild)
+
+	  ;; using methods 
+	  (obj > (child 2) > (grandchild 3 4 5))
+
+	  ;; direct access with []
+	  (obj > 2 > "key" > 'key > :key)
+
+	  ;; inline argument: maca expands it safely
+	  (-/ baz (a b) (+ (some-operation a) (other-operation b)))
+	  (= foo (baz foo bar))
+
+	  ;; procedure function: a function without implicit return
+	  (-/> (b)
+	      (if (< b 3)
+		  (var a (- 3 b))
+		  (var a (- b 3)))	;var keyword will be compacted at the beginning of function
+	      (= @a 2)			;alias for this[a]
+	      
+	      ;; inherit-this function (=>): saves 'this' of the outer environment 
+	      (($ "button") > (click (=> (e) (alert (this > 2))))))
+
+
+	  ;; prototype accessor
+	  (obj >> child > grandchild)
+	  (obj >> (method a))
+	  (obj >>)
+	  
+	  ;; existantial accessor
+	  (a ? b ? c)
+
+	  ;; try-catch-finally
+	  (try ((drink 3 "beer")
+		(eat 5 pizza))
+	       catch (x)
+	       ((if (== x "drunkTooMuch")
+		    (puke)
+		    (take digestive)))
+	       finally
+	       ((pay money)
+		(go home)))
+
+	  ;; iteration
+	  (for elem in ary         (alert elem))
+	  (for elem i in ary       (alert elem i))
+	  (for elem of obj         (alert elem))
+	  (for elem key of ary     (alert elem i))
+	  (for own elem key of ary (alert elem i))
+	  (for own elem of ary     (alert elem i))
+	  (for ((var i 0) (< i 10) (++ i))
+	    (alert "hello!")
+	    (alert i))
+
+	  ;; while and do-while
+	  ;; bad methodology
+	  (while true
+	    ((alert "Let's do it tomorrow")
+	     (alert "Let's do it tomorrow")))
+
+	  ;; good methodology
+	  (do 
+	   ((alert "Let's do it now")
+	    (alert "hush hush")
+	    (alert "hush hush"))
+	   while (not tired))
+
+	  ;; switch
+	  (switch x
+	    (case 1
+	      (alert x))			;1 case 1 statement
+	    (case 2				;1 case 2 statements
+	      (alert 22)
+	      (alert 22))
+	    (cases (3 4)			;2 cases 1 statements
+		   (alert x))
+	    (cases ((sqrt 2)
+		    (sqrt 3))	        ;2 cases 2 statements
+		   (alert x) 
+		   (alert x))
+	    (default
+		(alert "default")
+		(alert "default")
+	      (alert "default")))	;defaults
+	  
+	  ;; implicit return
+	  a))
+
+
+
+
 ;; atom
 (maca a)
 (maca 2)
