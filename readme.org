@@ -50,7 +50,29 @@ easy and fun to use.
 
 Have fun extending js syntax and help me!
 
+* How to try
+
+** recommended software
++ [[http://www.sbcl.org/][sbcl]] : The only lisp implimentation I've tested.
++ [[http://www.quicklisp.org/][quicklisp]] : great software.
++ [[http://common-lisp.net/project/slime/][slime]] : I greatly recommend you to install it if you are using
+  emacs. I'm an emacs user and don't know well about vim, so if you
+  have any information about a good interactive interface from vim to
+  lisp please tell me about it.
++ packages : install them via quicklisp.
+  + cl-match
+  + alexandria
+  + anaphora : I don't use it so much, but it's sometimes useful.
+
+** run
+input these code to the interpreter: 
+
+       (load "maca.lisp")
+       (in-package :maca)
+
 * Examples
+
+** Fundamentals
 
 #+BEGIN_SRC lisp
 (maca (-> (a)
@@ -105,18 +127,21 @@ return(a);
 }
 #+END_SRC
 
+** Procedure/Inline/Inherit-this function
+
 #+BEGIN_SRC lisp
 (maca (-/> ()
-          ;; inline argument: maca expands it safely
+          ;; inline function: maca expands it safely
           (-/ baz (a b) (+ (some-operation a) (other-operation b)))
           (= foo (baz foo bar))
 
-          ;; procedure function: a function without implicit return
+          ;; procedure function: functions without a implicit return
           (-/> (b)
               (if (< b 3)
                   (var a (- 3 b))
-                  (var a (- b 3)))      ;var keyword will be compacted at the beginning of function
-              (= @a 2)                  ;alias for this[a]
+                  (var a (- b 3)))      ; var keywords are put
+		                        ; at the beginning of function definition
+              (= @a 2)                  ; alias for this[a]
               
               ;; inherit-this function (=>): saves 'this' of the outer environment 
               (($ "button") > (click (=> (e) (alert (this > 2))))))))
@@ -141,6 +166,8 @@ $("button").click(f1689);
 };
 }
 #+END_SRC
+
+** Try-Catch-Finally
 
 #+BEGIN_SRC lisp
 (maca           ;; try-catch-finally
@@ -168,6 +195,8 @@ pay(money);
 go(home);
 }
 #+END_SRC
+
+** Iteration
 
 #+BEGIN_SRC lisp
 (maca ;; iteration
@@ -232,6 +261,9 @@ alert("hello!");
 alert(i);
 };
 #+END_SRC
+
+** while and do-while
+
 #+BEGIN_SRC lisp
 (maca          ;; while and do-while
           (while true
@@ -257,6 +289,9 @@ alert("hush hush");
 alert("hush hush");
 }while((! tired));
 #+END_SRC
+
+** switch
+
 #+BEGIN_SRC lisp
 (maca ;; switch
           (switch x
@@ -279,41 +314,46 @@ alert("hush hush");
 
 #+BEGIN_SRC js
 switch(x){
-case 1:alert(x)break;
-case 2:alert(22)alert(22)break;
+case 1:alert(x);
+break;
+case 2:alert(22);
+alert(22);
+break;
 
 case 3:
-case 4:alert(x)break;
+case 4:alert(x);
+break;
 
 case sqrt(2):
-case sqrt(3):alert(x)alert(x)break;
+case sqrt(3):alert(x);
+alert(x);
+break;
 default:alert("default");
 alert("default");
 alert("default");
+; //bug
 }
 #+END_SRC
 
+** Using defmaca to define a new syntax
+
+#+BEGIN_SRC lisp
+(defmaca my-if (condition then &optional else)
+  `(if ,condition
+       ,then
+       ,else))
+
+;; if you really want to use my-if you have to 
+;; add the pattern to m-compile. this will be
+;; soon improved so that defmaca takes another argument for the
+;; matching pattern and automatically add it to the list of 
+;; available patterns which cl-match uses.
+
+(maca (-> (a) (my-if a true false)))
+
+#+END_SRC
+
 see test.maca for more examples.
-
-* How to try
-
-** recommended software
-+ [[http://www.sbcl.org/][sbcl]] : The only lisp implimentation I've tested.
-+ [[http://www.quicklisp.org/][quicklisp]] : great software.
-+ [[http://common-lisp.net/project/slime/][slime]] : I greatly recommend you to install it if you are using
-  emacs. I'm an emacs user and don't know well about vim, so if you
-  have any information about a good interactive interface from vim to
-  lisp please tell me about it.
-+ packages : install them via quicklisp.
-  + cl-match
-  + alexandria
-  + anaphora : I don't use it so much, but it's sometimes useful.
-
-** run
-input these code to the interpreter: 
-
-       (load "maca.lisp")
-       (in-package :maca)
 
 * license
 

@@ -7,7 +7,7 @@ lang="en" xml:lang="en">
 <title>readme</title>
 <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-03-23 16:34:54 JST"/>
+<meta name="generated" content="2012-03-23 16:54:11 JST"/>
 <meta name="author" content="guicho"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -79,11 +79,21 @@ lang="en" xml:lang="en">
 <ul>
 <li><a href="#sec-1">1 Yet another Javascript compiler Macascript </a></li>
 <li><a href="#sec-2">2 Help me extend the syntax </a></li>
-<li><a href="#sec-3">3 Examples </a></li>
-<li><a href="#sec-4">4 How to try </a>
+<li><a href="#sec-3">3 How to try </a>
 <ul>
-<li><a href="#sec-4.1">4.1 recommended software </a></li>
-<li><a href="#sec-4.2">4.2 run </a></li>
+<li><a href="#sec-3.1">3.1 recommended software </a></li>
+<li><a href="#sec-3.2">3.2 run </a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4 Examples </a>
+<ul>
+<li><a href="#sec-4.1">4.1 Fundamentals </a></li>
+<li><a href="#sec-4.2">4.2 Procedure/Inline/Inherit-this function </a></li>
+<li><a href="#sec-4.3">4.3 Try-Catch-Finally </a></li>
+<li><a href="#sec-4.4">4.4 Iteration </a></li>
+<li><a href="#sec-4.5">4.5 while and do-while </a></li>
+<li><a href="#sec-4.6">4.6 switch </a></li>
+<li><a href="#sec-4.7">4.7 Using defmaca to define a new syntax </a></li>
 </ul>
 </li>
 <li><a href="#sec-5">5 license </a></li>
@@ -170,8 +180,76 @@ Have fun extending js syntax and help me!
 </div>
 
 <div id="outline-container-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> Examples </h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> How to try </h2>
 <div class="outline-text-2" id="text-3">
+
+
+
+</div>
+
+<div id="outline-container-3.1" class="outline-3">
+<h3 id="sec-3.1"><span class="section-number-3">3.1</span> recommended software </h3>
+<div class="outline-text-3" id="text-3.1">
+
+<ul>
+<li>
+<a href="http://www.sbcl.org/">sbcl</a> : The only lisp implimentation I've tested.
+</li>
+<li>
+<a href="http://www.quicklisp.org/">quicklisp</a> : great software.
+</li>
+<li>
+<a href="http://common-lisp.net/project/slime/">slime</a> : I greatly recommend you to install it if you are using
+emacs. I'm an emacs user and don't know well about vim, so if you
+have any information about a good interactive interface from vim to
+lisp please tell me about it.
+</li>
+<li>
+packages : install them via quicklisp.
+<ul>
+<li>
+cl-match
+</li>
+<li>
+alexandria
+</li>
+<li>
+anaphora : I don't use it so much, but it's sometimes useful.
+
+</li>
+</ul>
+</li>
+</ul>
+</div>
+
+</div>
+
+<div id="outline-container-3.2" class="outline-3">
+<h3 id="sec-3.2"><span class="section-number-3">3.2</span> run </h3>
+<div class="outline-text-3" id="text-3.2">
+
+<p>input these code to the interpreter: 
+</p>
+<p>
+(load "maca.lisp")
+(in-package :maca)
+</p>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Examples </h2>
+<div class="outline-text-2" id="text-4">
+
+
+
+</div>
+
+<div id="outline-container-4.1" class="outline-3">
+<h3 id="sec-4.1"><span class="section-number-3">4.1</span> Fundamentals </h3>
+<div class="outline-text-3" id="text-4.1">
 
 
 
@@ -235,18 +313,30 @@ return(a);
 
 
 
+</div>
+
+</div>
+
+<div id="outline-container-4.2" class="outline-3">
+<h3 id="sec-4.2"><span class="section-number-3">4.2</span> Procedure/Inline/Inherit-this function </h3>
+<div class="outline-text-3" id="text-4.2">
+
+
+
+
 
 <pre class="example">(maca (-/&gt; ()
-          ;; inline argument: maca expands it safely
+          ;; inline function: maca expands it safely
           (-/ baz (a b) (+ (some-operation a) (other-operation b)))
           (= foo (baz foo bar))
 
-          ;; procedure function: a function without implicit return
+          ;; procedure function: functions without a implicit return
           (-/&gt; (b)
               (if (&lt; b 3)
                   (var a (- 3 b))
-                  (var a (- b 3)))      ;var keyword will be compacted at the beginning of function
-              (= @a 2)                  ;alias for this[a]
+                  (var a (- b 3)))      ; var keywords are put
+                                        ; at the beginning of function definition
+              (= @a 2)                  ; alias for this[a]
               
               ;; inherit-this function (=&gt;): saves 'this' of the outer environment 
               (($ "button") &gt; (click (=&gt; (e) (alert (this &gt; 2))))))))
@@ -274,6 +364,17 @@ $("button").click(f1689);
 };
 }
 </pre>
+
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4.3" class="outline-3">
+<h3 id="sec-4.3"><span class="section-number-3">4.3</span> Try-Catch-Finally </h3>
+<div class="outline-text-3" id="text-4.3">
 
 
 
@@ -307,6 +408,17 @@ pay(money);
 go(home);
 }
 </pre>
+
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4.4" class="outline-3">
+<h3 id="sec-4.4"><span class="section-number-3">4.4</span> Iteration </h3>
+<div class="outline-text-3" id="text-4.4">
 
 
 
@@ -381,6 +493,18 @@ alert(i);
 
 
 
+</div>
+
+</div>
+
+<div id="outline-container-4.5" class="outline-3">
+<h3 id="sec-4.5"><span class="section-number-3">4.5</span> while and do-while </h3>
+<div class="outline-text-3" id="text-4.5">
+
+
+
+
+
 <pre class="example">(maca          ;; while and do-while
           (while true
             ((alert "Let's do it tomorrow")
@@ -412,6 +536,18 @@ alert("hush hush");
 
 
 
+</div>
+
+</div>
+
+<div id="outline-container-4.6" class="outline-3">
+<h3 id="sec-4.6"><span class="section-number-3">4.6</span> switch </h3>
+<div class="outline-text-3" id="text-4.6">
+
+
+
+
+
 <pre class="example">(maca ;; switch
           (switch x
             (case 1
@@ -436,18 +572,55 @@ alert("hush hush");
 
 
 <pre class="example">switch(x){
-case 1:alert(x)break;
-case 2:alert(22)alert(22)break;
+case 1:alert(x);
+break;
+case 2:alert(22);
+alert(22);
+break;
 
 case 3:
-case 4:alert(x)break;
+case 4:alert(x);
+break;
 
 case sqrt(2):
-case sqrt(3):alert(x)alert(x)break;
+case sqrt(3):alert(x);
+alert(x);
+break;
 default:alert("default");
 alert("default");
 alert("default");
+; //bug
 }
+</pre>
+
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4.7" class="outline-3">
+<h3 id="sec-4.7"><span class="section-number-3">4.7</span> Using defmaca to define a new syntax </h3>
+<div class="outline-text-3" id="text-4.7">
+
+
+
+
+
+<pre class="example">(defmaca my-if (condition then &amp;optional else)
+  `(if ,condition
+       ,then
+       ,else))
+
+;; if you really want to use my-if you have to 
+;; add the pattern to m-compile. this will be
+;; soon improved so that defmaca takes another argument for the
+;; matching pattern and automatically add it to the list of 
+;; available patterns which cl-match uses.
+
+(maca (-&gt; (a) (my-if a true false)))
+
 </pre>
 
 
@@ -455,65 +628,6 @@ alert("default");
 
 <p>
 see test.maca for more examples.
-</p>
-</div>
-
-</div>
-
-<div id="outline-container-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> How to try </h2>
-<div class="outline-text-2" id="text-4">
-
-
-
-</div>
-
-<div id="outline-container-4.1" class="outline-3">
-<h3 id="sec-4.1"><span class="section-number-3">4.1</span> recommended software </h3>
-<div class="outline-text-3" id="text-4.1">
-
-<ul>
-<li>
-<a href="http://www.sbcl.org/">sbcl</a> : The only lisp implimentation I've tested.
-</li>
-<li>
-<a href="http://www.quicklisp.org/">quicklisp</a> : great software.
-</li>
-<li>
-<a href="http://common-lisp.net/project/slime/">slime</a> : I greatly recommend you to install it if you are using
-emacs. I'm an emacs user and don't know well about vim, so if you
-have any information about a good interactive interface from vim to
-lisp please tell me about it.
-</li>
-<li>
-packages : install them via quicklisp.
-<ul>
-<li>
-cl-match
-</li>
-<li>
-alexandria
-</li>
-<li>
-anaphora : I don't use it so much, but it's sometimes useful.
-
-</li>
-</ul>
-</li>
-</ul>
-</div>
-
-</div>
-
-<div id="outline-container-4.2" class="outline-3">
-<h3 id="sec-4.2"><span class="section-number-3">4.2</span> run </h3>
-<div class="outline-text-3" id="text-4.2">
-
-<p>input these code to the interpreter: 
-</p>
-<p>
-(load "maca.lisp")
-(in-package :maca)
 </p>
 </div>
 </div>
@@ -548,7 +662,7 @@ Univ. of Tokyo
 <p class="author"> Author: guicho
 <a href="mailto:guicho2.71828@gmail.com">&lt;guicho2.71828@gmail.com&gt;</a>
 </p>
-<p class="date"> Date: 2012-03-23 16:34:54 JST</p>
+<p class="date"> Date: 2012-03-23 16:54:11 JST</p>
 <p class="creator">HTML generated by org-mode 6.33x in emacs 23</p>
 </div>
 </div>

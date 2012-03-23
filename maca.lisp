@@ -316,9 +316,9 @@
 
 (defmaca m-cases (vals body)
   `(glue ,@(mapcan #'(lambda (val) (list 'newline 'case 'space val 'colon)) vals)
-	 ,@body break))
+	 ,body break))
 (defmaca m-case (val body)
-  `(glue case space ,val colon ,@body break))
+  `(glue case space ,val colon ,body break))
 
 (defmaca m-default (body)
   `(glue default colon ,body))
