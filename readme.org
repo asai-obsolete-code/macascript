@@ -53,7 +53,7 @@ Have fun extending js syntax and help me!
 * Example
 
 #+srcname: maca-example
-#+begin_src common-lisp
+#+begin_src lisp
 (maca (-> (a)
 	  (if (a b c)			;multi-line then/else
 	      ((var d (- a b c))	;infix argument and var declaration
@@ -149,7 +149,7 @@ Have fun extending js syntax and help me!
 
 output:
 #+srcname: maca-compiled
-#+begin_src javascript
+#+begin_src js
 function(a){
 var d,e,f,g,tmp1658,tmp1659,g1664,ref1666,l1665,ref1668,l1667,g1669,ref1670,ref1671,key,ref1672,elem,own,ref1673,i;
 if(a(b,c)){
