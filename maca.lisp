@@ -283,7 +283,7 @@
       (for ((= ,key 0)
 	    (< ,key ,len)
 	    (++ ,key))
-	(= ,val (,ref -. ,key))
+	(= ,val (,ref > ',key))
 	,@body))))
 
 (defmaca m-iter-obj (val obj body &key (key (gensym)) own)

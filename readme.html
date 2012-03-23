@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+lang="en" xml:lang="en">
+<head>
+<title>readme</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2012-03-23 16:34:54 JST"/>
+<meta name="author" content="guicho"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+
+<h1 class="title">readme</h1>
+
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Yet another Javascript compiler Macascript </a></li>
+<li><a href="#sec-2">2 Help me extend the syntax </a></li>
+<li><a href="#sec-3">3 Examples </a></li>
+<li><a href="#sec-4">4 How to try </a>
+<ul>
+<li><a href="#sec-4.1">4.1 recommended software </a></li>
+<li><a href="#sec-4.2">4.2 run </a></li>
+</ul>
+</li>
+<li><a href="#sec-5">5 license </a></li>
+<li><a href="#sec-6">6 Author </a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Yet another Javascript compiler Macascript </h2>
+<div class="outline-text-2" id="text-1">
+
+
+<p>
+Macascript is a simple javascript compiler which is inspired
+by parenscript and coffeescript.
+</p>
+<p>
+I wasn't satisfied with either of them, so I made one myself.
+</p>
+<p>
+The motivation is that Parenscript doesn't seem to fit the need of
+javascript programmers. It is rather a utility for the lisp
+programmers who dynamically produces javascript code on the server
+side. Parenscript is still JUST LISP while Coffeescript is trying to
+follow the rule "It's just JavaScript".  The syntax was more on the
+Lisp side, like loop and let. (of course you can now use 'let' in the
+javascript 1.8 or newer, but it is still not available on the platform
+like Titanium Mobile, which I'm currently writing js programs for.)
+</p>
+<p>
+Besides, it often produces invalid js code. (Note that I only mention about the
+old version of parenscript because I haven't been watching the project
+recently.) I wanted to fix that up, but the code! Parenscript's source
+code was a mess for me. I gave up.
+</p>
+<p>
+Another motivation still. As you know, coffeescript is so cool. 
+It has the better, simple and beautiful syntax.
+It improved almost all of the bad points in javascript.
+</p>
+<p>
+However IT DOESN'T HAVE MACRO!!!!! 
+</p>
+<p>
+On the smartphone product, runtime speed is highly required for the
+user experience. And js is so slow compared with Obj-C or Java, the
+standard language for smartphone development. Only the compile-time
+macro can handle the optimization stuff like inline function, source
+code simplification, etc.
+</p>
+<p>
+Moreover, since coffeescript TRIES TO OMIT PARENTHESES, it must use
+the parser. It makes the source code complicated and
+PROCEDURAL. Procedual, so its not easy to extend.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Help me extend the syntax </h2>
+<div class="outline-text-2" id="text-2">
+
+
+<p>
+The macascript source code is really simple because the parsing of the
+S-expression tree relies on pattern matching provided with cl-match.
+</p>
+<p>
+Also my defmaca macro greatly helps you extend the syntax easily. All
+syntaxes but 'glue' and 'redundant-paren' are currently implemented
+with that macro. All macro will be finally compiled into 'glue'
+special macro, which just prints a series of atoms in its &amp;rest
+arguments. 'defmaca' is almost identical to
+defmacro, so the people who understands macro would feel it really
+easy and fun to use.
+</p>
+<p>
+Have fun extending js syntax and help me!
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Examples </h2>
+<div class="outline-text-2" id="text-3">
+
+
+
+
+
+<pre class="example">(maca (-&gt; (a)
+          (if (a b c)                   ;multi-line then/else
+              ((var d (- a b c))        ;infix argument and var declaration
+               (var e (== a b c d)))                  ; multiple comparison
+              ((var f '(a (b c) (+ 1 2 3)))           ; array literal
+               (var g (:a a :b (b c) :c (+ 1 2 3))))) ; object literal
+          ;; true if it's not undefined
+          (if? a b c)
+
+          ;; object accessor
+          (obj &gt; attibute)
+          (granpa &gt; parent &gt; obj &gt; child &gt; grandchild)
+          ;; using methods 
+          (obj &gt; (child 2) &gt; (grandchild 3 4 5))
+          ;; direct access with []
+          (obj &gt; 2 &gt; "key" &gt; 'key &gt; :key)
+          ;; prototype accessor
+          (obj &gt;&gt; child &gt; grandchild)
+          (obj &gt;&gt; (method a))
+          (obj &gt;&gt;)
+          ;; existantial accessor
+          (a ? b ? c)
+          ;; implicit return
+          a))
+</pre>
+
+
+
+
+
+<pre class="example">function(a){
+var d,e,f,g;
+if(a(b,c)){
+d = (a - (b - c));
+e = (a==b)&amp;&amp;(b==c)&amp;&amp;(c==d);
+}else({
+f = [a,b(c),(1 + (2 + 3))];
+g = {
+c:(1 + (2 + 3)),b:b(c),a:a};
+});
+if(((a!==undefined) &amp;&amp; ((typeof a)!=="undefined"))){
+b}else({
+c});
+obj.attibute;
+granpa.parent.obj.child.grandchild;
+obj.child(2).grandchild(3,4,5);
+obj[2]["key"][key][key];
+obj.prototype.child.grandchild;
+obj.prototype.method(a);
+obj.prototype;
+(((g1683 = a.b)!=undefined))?((((g1684 = g1683.c)!=undefined))?(g1684):((void 0))):((void 0));
+return(a);
+}
+</pre>
+
+
+
+
+
+<pre class="example">(maca (-/&gt; ()
+          ;; inline argument: maca expands it safely
+          (-/ baz (a b) (+ (some-operation a) (other-operation b)))
+          (= foo (baz foo bar))
+
+          ;; procedure function: a function without implicit return
+          (-/&gt; (b)
+              (if (&lt; b 3)
+                  (var a (- 3 b))
+                  (var a (- b 3)))      ;var keyword will be compacted at the beginning of function
+              (= @a 2)                  ;alias for this[a]
+              
+              ;; inherit-this function (=&gt;): saves 'this' of the outer environment 
+              (($ "button") &gt; (click (=&gt; (e) (alert (this &gt; 2))))))))
+</pre>
+
+
+
+
+
+<pre class="example">function(){
+var tmp1686,tmp1687;
+; // is this a bug?
+foo = (tmp1687 = bar,tmp1686 = foo,(some-operation(tmp1686) + other-operation(tmp1687)));
+function(b){
+var a,t1688,f1689;
+t1688 = this;
+f1689 = function(e){
+return(alert(t1688[2]));
+};
+if((b&lt;3)){
+a = (3 - b)}else({
+a = (b - 3)});
+@a = 2;
+$("button").click(f1689);
+};
+}
+</pre>
+
+
+
+
+
+<pre class="example">(maca           ;; try-catch-finally
+          (try ((drink 3 "beer")
+                (eat 5 pizza))
+               catch (x)
+               ((if (== x "drunkTooMuch")
+                    (puke)
+                    (take digestive)))
+               finally
+               ((pay money)
+                (go home))))
+</pre>
+
+
+
+
+
+<pre class="example">try{
+drink(3,"beer");
+eat(5,pizza);
+}catch(x){
+if((x=="drunkTooMuch")){
+puke()}else({
+take(digestive)});
+}finally{
+pay(money);
+go(home);
+}
+</pre>
+
+
+
+
+
+<pre class="example">(maca ;; iteration
+          (for elem in ary         (alert elem))
+          (for elem i in ary       (alert elem i))
+          (for elem of obj         (alert elem))
+          (for elem key of ary     (alert elem i))
+          (for own elem key of ary (alert elem i))
+          (for own elem of ary     (alert elem i))
+          (for ((var i 0) (&lt; i 10) (++ i))
+            (alert "hello!")
+            (alert i)))
+</pre>
+
+
+
+
+
+<pre class="example">var g1707,ref1709,l1708,ref1711,l1710,g1712,ref1713,ref1714,key,ref1715,elem,own,ref1716,i;
+ref1709 = ary;
+l1708 = ref1709.length;
+for(g1707 = 0;
+(g1707&lt;l1708);
+(++ g1707);
+){
+elem = ref1709[g1707];
+alert(elem);
+};
+ref1711 = ary;
+l1710 = ref1711.length;
+for(i = 0;
+(i&lt;l1710);
+(++ i);
+){
+elem = ref1711[i];
+alert(elem,i);
+};
+ref1713 = obj;
+for((g1712 in obj)){
+elem = ref1713[g1712];
+alert(elem);
+};
+ref1714 = ary;
+for((key in ary)){
+elem = ref1714[key];
+alert(elem,i);
+};
+ref1715 = ary;
+for((key in ary)){
+elem = ref1715[key];
+if((! elem.hasownproperty(key))){ // ouch, this is a bug
+continue()};
+alert(elem,i);
+};
+ref1716 = ary;
+for((elem in ary)){
+own = ref1716[elem];
+alert(elem,i);
+};
+for(i = 0;
+(i&lt;10);
+(++ i);
+){
+alert("hello!");
+alert(i);
+};
+</pre>
+
+
+
+
+<pre class="example">(maca          ;; while and do-while
+          (while true
+            ((alert "Let's do it tomorrow")
+             (alert "Let's do it tomorrow")))
+
+          ;; good methodology
+          (do 
+           ((alert "Let's do it now")
+            (alert "hush hush")
+            (alert "hush hush"))
+           while (not tired))) ;; not is an alias for !
+</pre>
+
+
+
+
+
+<pre class="example">while(true){
+alert("Let's do it tomorrow");
+alert("Let's do it tomorrow");
+};
+do{
+alert("Let's do it now");
+alert("hush hush");
+alert("hush hush");
+}while((! tired));
+</pre>
+
+
+
+
+<pre class="example">(maca ;; switch
+          (switch x
+            (case 1
+              (alert x))                        ;1 case 1 statement
+            (case 2                             ;1 case 2 statements
+              (alert 22)
+              (alert 22))
+            (cases (3 4)                        ;2 cases 1 statements
+                   (alert x))
+            (cases ((sqrt 2)
+                    (sqrt 3))           ;2 cases 2 statements
+                   (alert x) 
+                   (alert x))
+            (default
+                (alert "default")
+                (alert "default")
+              (alert "default"))))       ;defaults
+</pre>
+
+
+
+
+
+<pre class="example">switch(x){
+case 1:alert(x)break;
+case 2:alert(22)alert(22)break;
+
+case 3:
+case 4:alert(x)break;
+
+case sqrt(2):
+case sqrt(3):alert(x)alert(x)break;
+default:alert("default");
+alert("default");
+alert("default");
+}
+</pre>
+
+
+
+
+<p>
+see test.maca for more examples.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> How to try </h2>
+<div class="outline-text-2" id="text-4">
+
+
+
+</div>
+
+<div id="outline-container-4.1" class="outline-3">
+<h3 id="sec-4.1"><span class="section-number-3">4.1</span> recommended software </h3>
+<div class="outline-text-3" id="text-4.1">
+
+<ul>
+<li>
+<a href="http://www.sbcl.org/">sbcl</a> : The only lisp implimentation I've tested.
+</li>
+<li>
+<a href="http://www.quicklisp.org/">quicklisp</a> : great software.
+</li>
+<li>
+<a href="http://common-lisp.net/project/slime/">slime</a> : I greatly recommend you to install it if you are using
+emacs. I'm an emacs user and don't know well about vim, so if you
+have any information about a good interactive interface from vim to
+lisp please tell me about it.
+</li>
+<li>
+packages : install them via quicklisp.
+<ul>
+<li>
+cl-match
+</li>
+<li>
+alexandria
+</li>
+<li>
+anaphora : I don't use it so much, but it's sometimes useful.
+
+</li>
+</ul>
+</li>
+</ul>
+</div>
+
+</div>
+
+<div id="outline-container-4.2" class="outline-3">
+<h3 id="sec-4.2"><span class="section-number-3">4.2</span> run </h3>
+<div class="outline-text-3" id="text-4.2">
+
+<p>input these code to the interpreter: 
+</p>
+<p>
+(load "maca.lisp")
+(in-package :maca)
+</p>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> license </h2>
+<div class="outline-text-2" id="text-5">
+
+
+<p>
+Currently I haven't decided which license I should choose. 
+Please give me some advice.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> Author </h2>
+<div class="outline-text-2" id="text-6">
+
+
+<p>
+Masataro Asai (guicho2.71828@gmail.com)
+Univ. of Tokyo
+</p>
+</div>
+</div>
+<div id="postamble">
+<p class="author"> Author: guicho
+<a href="mailto:guicho2.71828@gmail.com">&lt;guicho2.71828@gmail.com&gt;</a>
+</p>
+<p class="date"> Date: 2012-03-23 16:34:54 JST</p>
+<p class="creator">HTML generated by org-mode 6.33x in emacs 23</p>
+</div>
+</div>
+</body>
+</html>
