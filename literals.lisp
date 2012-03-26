@@ -50,7 +50,7 @@
 		`(blk (comma ,@pairs)))))
 
 (defmaca m-direct-accessor (obj child more)
-  `(glue ,obj (bracket (value ,child))
+  `(glue (value ,obj) (bracket (value ,child))
 		 ,(when more
 				`(nil ,@more))))
 

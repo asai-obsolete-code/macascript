@@ -107,7 +107,7 @@ so open the REPL in the repository and input these code to the interpreter:
 
 #+BEGIN_SRC js
 function(a){
-var d,e,f,g,temp1242;
+var d,e,f,g,temp1248,temp1249;
 if(a(b,c)){
 d = (a-(b-c))e = (a==b)&&(b==c)&&(c==d)}else{
 f = [a,b(c),(1+(2+3))]g = {
@@ -119,14 +119,16 @@ obj[2]["key"][key][key];
 obj.prototype.child.grandchild;
 obj.prototype.method(a);
 obj.prototype;
-(((g1240 = a.b)!=undefined))?((((g1241 = g1240.c)!=undefined))?(g1241):((void 0))):((void 0));
-(if(a){
-b}else{
-c}[(if(d){
-temp1242 = e;
+(((g1246 = a.b)!=undefined))?((((g1247 = g1246.c)!=undefined))?(g1247):((void 0))):((void 0));
+((if(a){
+temp1248 = b;
 }else{
-temp1242 = f;
-},temp1242)]||(x(a)&&x(b)));
+temp1248 = c;
+},temp1248)[(if(d){
+temp1249 = e;
+}else{
+temp1249 = f;
+},temp1249)]||(x(a)&&x(b)));
 return(a);
 }
 #+END_SRC
