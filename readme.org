@@ -35,20 +35,20 @@ Moreover, since coffeescript TRIES TO OMIT PARENTHESES, it must use
 the parser. It makes the source code complicated and
 PROCEDURAL. Procedual, so its not easy to extend.
 
-* Help me extend the syntax
+* Let's extend the syntax
 
 The macascript source code is really simple because the parsing of the
 S-expression tree relies on pattern matching provided with cl-match.
 
-Also my defmaca macro greatly helps you extend the syntax easily. All
+Also defmaca macro greatly helps you extend the syntax. All
 syntaxes but 'glue' and 'redundant-paren' are currently implemented
 with that macro. All macro will be finally compiled into 'glue'
-special macro, which just prints a series of atoms in its &rest
+special macro, which just prints a series of atoms in its
 arguments. 'defmaca' is almost identical to
 defmacro, so the people who understands macro would feel it really
 easy and fun to use.
 
-Have fun extending js syntax and help me!
+Have fun extending js syntax!
 
 * How to try
 
@@ -65,10 +65,20 @@ Have fun extending js syntax and help me!
   + anaphora : I don't use it so much, but it's sometimes useful.
 
 ** run
-input these code to the interpreter: 
 
-       (load "maca.lisp")
+the code is just experimental yet.
+so open the REPL in the repository and input these code to the interpreter: 
+
+if your implementation supports 'require:
+
+       (require 'macascript)
        (in-package :maca)
+
+or else:
+
+       (asdf:operate 'asdf:load-op 'macascript)
+       (in-package :maca)
+
 
 * Examples
 
@@ -84,11 +94,7 @@ input these code to the interpreter:
           ;; true if it's not undefined
           (if? a b c)
 
-          ;; object accessor
-          (obj > attibute)
-          (granpa > parent > obj > child > grandchild)
-          ;; using methods 
-          (obj > (child 2) > (grandchild 3 4 5))
+          (granpa > parent > obj > (child 2) > grandchild 3 4 5)
           ;; direct access with []
           (obj > 2 > "key" > 'key > :key)
           ;; prototype accessor
@@ -115,9 +121,7 @@ c:(1 + (2 + 3)),b:b(c),a:a};
 if(((a!==undefined) && ((typeof a)!=="undefined"))){
 b}else({
 c});
-obj.attibute;
-granpa.parent.obj.child.grandchild;
-obj.child(2).grandchild(3,4,5);
+granpa.parent.obj.child(2).grandchild(3,4,5);
 obj[2]["key"][key][key];
 obj.prototype.child.grandchild;
 obj.prototype.method(a);
@@ -139,30 +143,27 @@ return(a);
           (-/> (b)
               (if (< b 3)
                   (var a (- 3 b))
-                  (var a (- b 3)))      ; var keywords are put
-		                        ; at the beginning of function definition
+                  (var a (- b 3)))
               (= @a 2)                  ; alias for this[a]
-              
               ;; inherit-this function (=>): saves 'this' of the outer environment 
               (($ "button") > (click (=> (e) (alert (this > 2))))))))
 #+END_SRC
 
 #+BEGIN_SRC js
 function(){
-var tmp1686,tmp1687;
-; // is this a bug?
-foo = (tmp1687 = bar,tmp1686 = foo,(some-operation(tmp1686) + other-operation(tmp1687)));
+var tmp1226,tmp1227;
+;
+foo = (tmp1227 = bar,tmp1226 = foo,(some-operation(tmp1226)+other-operation(tmp1227)));
 function(b){
-var a,t1688,f1689;
-t1688 = this;
-f1689 = function(e){
-return(alert(t1688[2]));
+var a,t1228,f1229;
+t1228 = this;
+f1229 = function(e){
+return(alert(t1228[2]));
 };
 if((b<3)){
-a = (3 - b)}else({
-a = (b - 3)});
-@a = 2;
-$("button").click(f1689);
+a = (3-b)}else{
+a = (b-3)}this.a = 2;
+$("button").click(f1229);
 };
 }
 #+END_SRC

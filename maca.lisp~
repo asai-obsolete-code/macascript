@@ -1,6 +1,0 @@
-
-
-(ql:quickload :alexandria)
-
-(defpackage maca
-  (:use :cl-user :alexandria))

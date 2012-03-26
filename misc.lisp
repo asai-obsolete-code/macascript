@@ -19,3 +19,6 @@
 					sent
 					`(glue ,sent semicolon newline)))
 			sents)))
+
+(recompile)
+(setf *recompile-compiler* t)
