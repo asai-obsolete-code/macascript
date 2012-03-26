@@ -5,7 +5,7 @@
 (defpackage maca
   (:use :common-lisp :cl-user :alexandria :cl-match :anaphora))
 
-(proclaim '(optimize (debug 3)))
+(proclaim '(optimize (debug 3) (safety 3)))
 (in-package :maca)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -80,22 +80,8 @@
     (rparen . #\))
     (comment . \\))
   "alist for aliasing the constants such as \"on\" \"yes\".")
-;; |
-;; core macros
 
-(defmacro recompile ()
-  `(defun m-compile (s env lst)
-	 (macrolet ((rewrite (name &rest args)
-				  `(values (,name s env ,@args) ',name)))
-	   (match lst
-		 ,@(copy-tree *customs*)
-		 ,@(copy-tree *core-ops*)
-		 ,@(copy-tree *functions*)
-		 ,@(copy-tree *iteraters*)
-		 ,@(copy-tree *conditions*)
-		 ,@(copy-tree *objects*)
-		 ,@(copy-tree *fundamentals*)
-		 ,@(copy-tree *miscellaneous*)))))
+;; core macros
 
 (defun show-patterns ()
   (append *customs*
@@ -109,8 +95,6 @@
 
 (defparameter *recompile-compiler* nil)
 
-;; (compile-matcher lst)
-
 (defstruct closure
   (indentation 0)
   (arguments nil)
@@ -118,51 +102,79 @@
   (initializations nil)
   (inline-lambda nil))
 
+(defmacro recompile ()
+  `(defun m-compile (s env need-value lst)
+	 (macrolet ((rewrite (name &rest args)
+				  `(values (,name s env need-value ,@args) ',name)))
+	   (match lst
+		 ,@(copy-tree *customs*)
+		 ,@(copy-tree *core-ops*)
+		 ,@(copy-tree *functions*)
+		 ,@(copy-tree *iteraters*)
+		 ,@(copy-tree *conditions*)
+		 ,@(copy-tree *objects*)
+		 ,@(copy-tree *fundamentals*)
+		 ,@(copy-tree *miscellaneous*)))))
+
 ;; you can perform some bad behavior on "env". it is intentional
 (defmacro defmaca (name args &body body)
-  (with-gensyms (s)
+  (with-gensyms (s definition)
     `(progn
-	   (defun ,name (,s env ,@args)
+	   (defun ,name (,s env need-value ,@args)
 		 (symbol-macrolet ((+cl+ (car env))
 						   (+indentation+ (closure-indentation (car env)))
 						   (+variables+ (closure-variables (car env)))
 						   (+initializations+ (closure-initializations (car env)))
 						   (+inline-lambda+ (closure-inline-lambda (car env)))
 						   (+arguments+ (closure-arguments (car env))))
-		   (m-compile ,s env (progn ,@body))))
+		   (let* ((next-need-value nil)
+				  (,definition (progn ,@body)))
+			 (m-compile ,s env next-need-value ,definition))))
 	   ,@(if *recompile-compiler*
 			 `((format t "recompiling m-compile ...")
 			   (recompile)
 			   (format t "done.~%"))))))
-  
+
+(defun value (arg)
+  `(value ,arg))
+
+(defmacro value-if (need-value arg)
+  `(if ,need-value
+	   (list 'value ,arg)
+	   ,arg))
+
+
 ;; --------------------------------
 ;; fundamentals
 
 ;; these operators are just meant to be used by the compiler
 ;; don't use it
 (defparameter *fundamentals*
-  '(((list* 'glue clauses)              (rewrite m-glue clauses))
+  '(;;((list 'glue 'nil 'semicolon 'newline) (rewrite m-glue nil))
+	((list* 'glue clauses)              (rewrite m-glue clauses))
 	((list 'paren (list 'paren clause)) (rewrite m-redundant-paren clause))
 	((list 'paren clause)               (rewrite m-paren clause))
 	((list 'bracket clause)             (rewrite m-bracket clause))
 	((list* 'comma clauses)             (rewrite m-comma clauses))
 	((list 'blk clause)                 (rewrite m-block clause))
+	((list 'value arg)                  (rewrite m-need-value arg))
 	((list '// str)                     (rewrite m-comment str))
 	((list 'raw-string str)             (rewrite m-raw-string str))))
 
-(defun m-glue (s env args)
+(defun m-glue (s env need-value args)
+  (declare (ignore need-value))
   (format s "~{~a~}"
 		  (mapcar
 		   #'(lambda (arg)
 			   (let ((true-arg (or (cdr (assoc arg *aliases*)) arg)))
 				 (typecase true-arg
 				   (null "") 
-				   (cons (m-compile nil env true-arg))
+				   (cons (m-compile nil env nil true-arg))
 				   ;;						   (atom (m-compile nil env true-arg))
 				   (string (format nil "\"~a\"" true-arg))
 				   (symbol (let ((str (symbol-name true-arg)))
 							 (cond
-							   ((char= (aref str 0) #\@) (m-compile nil env true-arg))
+							   ((char= (aref str 0) #\@) (m-compile nil env nil true-arg))
 							   ((every #'(lambda (c) (or (not (both-case-p c))
 														 (upper-case-p c)))
 									   str)
@@ -173,24 +185,33 @@
 
 (defmaca m-paren (arg)
   `(glue lparen ,arg rparen))
-(defun m-redundant-paren (s env arg)
-  (m-compile s env `(paren ,arg)))
+(defun m-redundant-paren (s env need-value arg)
+  (declare (ignore need-value))
+  (m-compile s env nil `(paren ,arg)))
 (defmaca m-bracket (arg)
   `(glue lbracket ,arg rbracket))
 (defmaca m-block (arg)
   `(glue lbrace newline ,arg rbrace))
 (defmaca m-comma (args)
-  `(glue ,@(butlast 
-			(mapcan
-			 #'(lambda (arg) (list arg 'comma))
-			 args))))
+  `(glue ,@(mapcan
+			#'(lambda (arg) (list arg 'comma))
+			(butlast args))
+		 ,(if need-value
+			  `(value ,@(last args))
+			  (car (last args)))))
 
-(defun m-comment (s env string)
+(defun m-comment (s env need-value string)
+  (declare (ignore need-value))
   (declare (ignore env))
   (format s "/* ~a */~%" string))
-(defun m-raw-string (s env string)
+(defun m-raw-string (s env need-value string)
+  (declare (ignore need-value))
   (declare (ignore env s))
   string)
+
+(defmaca m-need-value (arg)
+  (setf next-need-value t)
+  arg)
 
 ;; -----------------------------
 ;; function and function calls
@@ -200,12 +221,13 @@
 	((list* '-> (list* args) body)      (rewrite m-function args body))
 	((list* '=> (list* args) body)      (rewrite m-inherit-this-function args body))
 	((list* '-/> (list* args) body)     (rewrite m-procedure-function args body))
+	((list* '=/> (list* args) body)     (rewrite m-inherit-this-procedure-function args body))
 	((list* '-/ name (list* args) body) (rewrite m-inline-function name args body))))
 
 (defmacro compile-in-advance (env script)
   `(list 'raw-string 
 		 (with-output-to-string (s)
-		   (m-compile s ,env ,script))))
+		   (m-compile s ,env nil ,script))))
 
 (defmacro check-args (args &body body)
   `(let ((args (flatten ,args)))
@@ -228,9 +250,9 @@
 				   (raw (compile-in-advance (cons cl env)
 											`(,@(butlast body)
 												(return ,(car (last body)))))))
-				  `(blk (glue ,(aif +variables+
+				  `(blk (glue ,(aif (closure-variables cl)
 									`((glue var space (comma ,@(uniquify it)))))
-							  (,@(nreverse +initializations+))
+							  (,@(nreverse (closure-initializations cl)))
 							  ,raw))))))
 
 (defmaca m-procedure-function (args body)
@@ -238,8 +260,8 @@
     `(glue function (paren (comma ,@args))
 		   ,(let* ((cl (make-closure :arguments args))
 				   (raw (compile-in-advance (cons cl env) body)))
-				  `(blk (glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
-							  (,@(nreverse +initializations+))
+				  `(blk (glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
+							  (,@(nreverse (closure-initializations cl)))
 							  ,raw))))))
 
 (defun insert-initialization (cl &rest var-val-plist)
@@ -256,9 +278,18 @@
   (let ((this (gensym "t"))
 		(fn (gensym "f")))
     (insert-initialization
-     (car env)
+	 +cl+
      this 'this 
      fn `(-> ,args ,@(subst this 'this body)))
+    fn))
+
+(defmaca m-inherit-this-procedure-function (args body)
+  (let ((this (gensym "t"))
+		(fn (gensym "f")))
+    (insert-initialization
+     (car env)
+     this 'this 
+     fn `(-/> ,args ,@(subst this 'this body)))
     fn))
 
 (defmaca m-inline-function (name args body)
@@ -299,57 +330,82 @@
 
 (defmaca m-sentences (sents)
   `(glue ,@(mapcar
-			#'(lambda (sent) `(glue ,sent semicolon newline))
+			#'(lambda (sent) 
+				(ifmatch (list 'var _) sent
+					sent
+					`(glue ,sent semicolon newline)))
 			sents)))
   
 ;; -----------------------------
 ;; iteration
 
 (defparameter *iteraters*
-  '(((list* 'for val 'in array body)          (rewrite m-iter-array val array body))
-	((list* 'for val key 'in array body)      (rewrite m-iter-array val array body :key key))
-	((list* 'for val 'in array body)          (rewrite m-iter-array val array body))
-	((list* 'for val key 'in array body)      (rewrite m-iter-array val array body :key key))
-	((list* 'for val 'of array body)          (rewrite m-iter-obj val array body))
-	((list* 'for val key 'of array body)      (rewrite m-iter-obj val array body :key key))
-	((list* 'for 'own val 'of array body) (rewrite m-iter-obj val array body :own t))
-	((list* 'for 'own val key 'of array body) (rewrite m-iter-obj val array body :key key :own t))
+  '(((list* 'for val 'in array body)               (rewrite m-iter-array val array body))
+	((list* 'for val key 'in array body)           (rewrite m-iter-array val array body :key key))
+	((list* 'for val 'in array body)               (rewrite m-iter-array val array body))
+	((list* 'for val key 'in array body)           (rewrite m-iter-array val array body :key key))
+	((list* 'for val 'of array body)               (rewrite m-iter-obj val array body))
+	((list* 'for val key 'of array body)           (rewrite m-iter-obj val array body :key key))
+	((list* 'for 'own val 'of array body)          (rewrite m-iter-obj val array body :own t))
+	((list* 'for 'own val key 'of array body)      (rewrite m-iter-obj val array body :key key :own t))
 	((list* 'for (list begin condition next) body) (rewrite m-for begin condition next body))))
 
 (defmaca m-for (begin condition next body)
-  `(glue for (paren (,begin ,condition ,next))
-		 (blk ,body)))
+  (if need-value
+	  (let ((result (gensym "result")))
+		`((var ,result '())
+		  (for (,begin ,condition ,next)
+			,@(butlast body)
+			(,result > (push (need-value ,@(last body)))))))
+	  `(glue for (paren (glue ,begin semicolon ,condition semicolon ,next))
+			 (blk ,body))))
 
 (defmaca m-iter-array (val array body &key (key (gensym)))
-  (let ((len (gensym "l"))
-		(ref (gensym "ref")))
-    `((var ,key)
-      (var ,val)
-      (var ,ref ,array)
-      (var ,len (,ref > length))
-      (for ((= ,key 0)
-			(< ,key ,len)
-			(++ ,key))
-		(= ,val (,ref > ',key))
-		,@body))))
+  (if need-value
+	  (with-temp (result)
+		`((= ,result '())
+		  (for ,val ,key in ,array
+			   ,(if (atom-or-op body)
+					`(,result > (push (value ,body)))
+					`(,@(butlast body)
+						(,result > (push (value ,@(last body)))))))))
+	  (let ((len (gensym "l"))
+			(ref (gensym "ref")))
+		`((var ,key)
+		  (var ,val)
+		  (var ,ref ,array)
+		  (var ,len (,ref > length))
+		  (for ((= ,key 0)
+				(< ,key ,len)
+				(++ ,key))
+			(= ,val (,ref > ',key))
+			,@body)))))
 
 (defmaca m-iter-obj (val obj body &key (key (gensym)) own)
-  (let ((ref (gensym "ref")))
-    `((var ,key)
-      (var ,val)
-      (var ,ref ,obj)
-      (glue for (paren (in ,key ,obj))
-			(blk 
-			 ((= ,val (,ref > ',key))
-			  ,@(when own 
-					  (let ((global (car (last env))))
-						(pushnew '__hasprop (closure-variables global))
-						(pushnew `(= __hasprop (|Object| >> |hasOwnProperty|))
-								 (closure-initializations global))
-						;;(break "~a" global)
-						)
-					  `((if (! (__hasprop > (call ,val ,key))) (continue))))
-			  ,@body))))))
+  (if need-value
+	  (with-temp (result)
+		`((= ,result (new (|Object|)))
+		  (for ,val ,key of ,obj 
+			   ,(if (atom-or-op body)
+					`(= (,result > ',key) (value ,body))
+					`(,@(butlast body)
+						(= (,result > ',key) (value ,@(last body))))))))
+	  (let ((ref (gensym "ref")))
+		`((var ,key)
+		  (var ,val)
+		  (var ,ref ,obj)
+		  (glue for (paren (in ,key ,obj))
+				(blk 
+				 ((= ,val (,ref > ',key))
+				  ,@(when own 
+						  (let ((global (car (last env))))
+							(pushnew '__hasprop (closure-variables global))
+							(pushnew `(= __hasprop (|Object| >> |hasOwnProperty|))
+									 (closure-initializations global))
+							;;(break "~a" global)
+							)
+						  `((if (! (__hasprop > (call ,val ,key))) (continue))))
+				  ,@body)))))))
 
 ;; --------------------------------
 ;; conditional expression
@@ -384,35 +440,74 @@
 	 (error "invalid try-catch statement"))))
 
 (defmaca m-? (condition then &optional (else 'undefined))
-  `(glue (paren ,condition) ? (paren ,then) colon (paren ,else)))
+  `(glue (paren (value ,condition))
+		 ?
+		 (paren (value ,then))
+		 colon
+		 (paren (value ,else))))
 
 (defmaca m-if-? (thing then &optional else)
-  `(if (and (!== ,thing null)
-			(!== (typeof ,thing) "undefined"))
-       ,then
-       ,else))
+  (if need-value
+	  `(value (if (and (!== ,thing null)
+					   (!== (typeof ,thing) "undefined"))
+				  ,then
+				  ,else))
+	  `(if (and (!== ,thing null)
+				(!== (typeof ,thing) "undefined"))
+		   ,then
+		   ,else)))
 
 (defmaca m-assign-if-exist (to from)
-  `(if? ,to
-		(= ,to ,from)))
+  (value-if need-value
+			`(if? ,to
+				  (= ,to ,from))))
+
+(defun return-last (sents temp-val)
+  `(,@(butlast sents)
+	(= ,temp-val ,@(last sents))))
+
+(defmacro with-temp ((name) &body body)
+  `(let ((,name (gensym "temp")))
+	 `(paren (comma ((var ,,name) ,,@body) ,,name))))
+
+(defun atom-or-op (arg)
+  (or (atom arg) (atom (car arg))))
+
+(defun 1-or-2-line (arg temp)
+  (if (atom-or-op arg)
+	  `((= ,temp ,arg))
+	  (return-last arg temp)))
 
 (defmaca m-if (condition then &optional else)
-  `(glue if (paren ,condition) (blk ,then) 
-		 ,@(when else `(else (blk ,else)))))
+  (if need-value
+	  (with-temp (temp)
+		`(if ,condition
+			 ,(1-or-2-line then temp)
+			 ,(when else (1-or-2-line else temp))))
+	  `(glue if (paren ,condition) (blk ,then)
+			 ,@(when else `(else (blk ,else))))))
 
 (defmaca m-while (condition body)
-  `(glue while (paren ,condition)
-		 (blk ,body)))
+  (if need-value
+	  (with-temp (temp)
+		`(while ,condition
+		   ,(1-or-2-line body temp)))
+	  `(glue while (paren ,condition)
+			 (blk ,body))))
 
 (defmaca m-do-while (condition body)
-  `(glue do (blk ,body)
-		 while
-		 (paren ,condition)))
+  (if need-value
+	  (with-temp (temp)
+		`(do ,(1-or-2-line body temp) while ,condition))
+	  `(glue do (blk ,body)
+			 while
+			 (paren ,condition))))
 
 (defmaca m-label (name body)
-  `(glue ,name colon
-		 (blk ,body)))
+  `(glue ,name colon (blk ,body)))
 
+
+;; todo: make it return a value
 (defmaca m-switch (val conditions)
   `(glue switch (paren ,val)
 		 (blk ,conditions)))
@@ -442,19 +537,19 @@
 ;; math and core operators
 
 (defparameter *core-ops*
-  '(((list 'var (type symbol v1)) (rewrite m-var v1))
+  '(((list 'var (type symbol v1))     (rewrite m-var v1))
 	((list 'var (type symbol v1) v2)  (rewrite m-var v1 v2))
 	((list* 'var _ rest)              (error "invalid variable name"))
 	((when (member op *assignments*) (list op v1 v2))  (rewrite m-assignments op v1 v2))
 	((when (member op *infixes*)     (list* op vars))  (rewrite m-infix op vars))
-	((when (member op *mono-ops*)    (list op))    (rewrite m-mono-ops op))
+	((when (member op *mono-ops*)    (list op))        (rewrite m-mono-ops op))
 	((when (member op *mono-ops*)    (list op var))    (rewrite m-mono-ops op var))
 	((when (member op *comparisons*) (list* op vars))  (rewrite m-comparison op vars))))
 
 (defmaca m-var (var &optional val)
-  (push var (closure-variables (car env)))
+  (push var +variables+)
   (if val
-      `(glue (= ,var ,val) semicolon newline)
+      `(= ,var ,val)
       nil))
 
 (defparameter *assignments*
@@ -528,14 +623,14 @@
 	`(this > ,property)))
 
 (defmaca m-array (args)
-  `(bracket (comma ,@args)))
+  `(bracket (comma ,@(mapcar #'value args))))
 
 (defmaca m-obj (key-value-plist)
   (if (oddp (length key-value-plist))
       (error "invalid object literal")
       (let* ((alist (plist-to-alist key-value-plist))
 			 (pairs (mapcar #'(lambda (cons)
-								`(glue ,(car cons) colon ,(cdr cons)))
+								`(glue ,(car cons) colon (value ,(cdr cons))))
 							alist)))
 		`(blk (comma ,@pairs)))))
 
@@ -572,7 +667,7 @@
 (defparameter *customs* nil)
 (defparameter *miscellaneous*
   '( ;;for the evaluation of single atom at the top level
-	((type atom val) (values (m-glue s env (list val)) (type-of val))) 
+	((type atom val) (values (m-glue s env nil (list val)) (type-of val))) 
 	((list* (type atom op) arguments)         (rewrite m-function-call op arguments))
 	((list) (values nil 'null))
 	((list* sentences)                        (rewrite m-sentences sentences))))
@@ -583,7 +678,9 @@
 (defmacro maca (&body body)
   `(progn
      (multiple-value-bind (value type)
-		 (m-compile t (list (make-closure)) '(global ,@body))
+		 ,(if (typep (car body) 'atom)
+			  `(m-compile t (list (make-closure)) t ',@body)
+			  `(m-compile t (list (make-closure)) t '(global ,@body)))
        (declare (ignore value))
        (format t "~%")
        type)))

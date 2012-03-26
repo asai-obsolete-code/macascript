@@ -1,17 +1,7 @@
 
-;; atom
-(maca a)
-(maca 2)
-(maca "string")
-(maca :a)
-
-(maca (gensym))
-(let ((a (gensym)))
-  (m-compile t (list a)))
-
 ;; fundamentals
 
-(maca (glue a 2 space "string" semicolon))
+(maca (glue a 2 space "string"))
 (maca (paren a))
 (maca (paren (paren a)))			;reduces redundancy automatically
 (maca (paren (paren (paren a))))			;reduces redundancy automatically
@@ -27,8 +17,10 @@
 
 ;; assignments
 (maca (= number 3))
-(maca (blk (= number 3) (= number 3)))
 (maca (blk ((= number 3) (= number 3))))
+(maca (with-label (label) 
+		(= number 3)
+		(= number 3)))
 (maca (comma (= number 3) (= number 3)))
 (maca (var number 3))
 (maca (var number))
@@ -51,7 +43,7 @@
 (maca (>= 5 3 4))
 
 ;; mono-ops
-(maca (new (number)))
+(maca (new (|Number|)))
 (maca (typeof 5))
 
 ;; in
@@ -96,18 +88,24 @@
 (maca (foo)
       (bar foo)
       (-/ baz (a b) (+ (some-operation a)
-		       (other-operation b)))
+					   (other-operation b)))
       (= foo (baz foo bar)))
 
 ;; this is not ok
 (maca (foo)
       (bar foo)
       (-/ baz (a b) (+ (some-operation a)
-		       (other-operation b)))
+					   (other-operation b)))
       (= foo (baz foo bar))
       (= bar (baz 1 (baz foo bar))))
 
 ;; conditional expression
+
+(maca (value (if (a b c)
+				 (= d (- a b c)))))
+
+(maca (value (if (a b c) (- a b c))))
+
 (maca (if (a b c)
 	  (= d (- a b c))))		;one-line
 (maca (if (a b c)
@@ -118,16 +116,17 @@
 	   (= d (- a b c)))
 	  (= e (+ a b c d))))		;multi-line then
 
-(maca (if (a b c)			;multi-line then/else
-	  ((= d (- a b c))
-	   (= e (+ a b c d)))
-	  ((= e (+ a b c d))
-	   (= d (- a b c)))))
+(maca (value (if (a b c)			;multi-line then/else
+				 ((= d (- a b c))
+				  (= e (+ a b c d)))
+				 ((= e (+ a b c d))
+				  (= d (- a b c))))))
 
 (maca (? a b c))
 
 ;; true if it's not undefined
 (maca (if? a b c))
+(maca (value (if? a b c)))
 
 ;; Literals
 
@@ -141,6 +140,17 @@
 (maca (obj > child > grandchild))
 (maca (granpa > parent > obj > child > grandchild))
 (maca (obj > (child 2) > (grandchild 3 4 5)))
+
+(maca (obj > child 2 2 4))				;is an alias for 
+(maca (obj > (child 2 2 4)))
+
+;; however there's a difference.
+;;for example, this is valid
+(maca (obj > (child 2 2) > 4))			;obj.child(2,2)[4];
+;; and this is not valid
+(maca (obj > child 2 2 > 4))			;obj.child(2,2,>,4);
+
+
 
 (maca (obj > 2 > "key"))
 (maca (obj > 'key))
@@ -170,6 +180,14 @@
 	    (go home))))
 
 ;; iteration
+
+
+(maca (value (for elem in ary
+				  (alert elem)
+				  (alert elem))))
+(maca (value (for elem in ary
+				  (alert elem))))
+
 
 (maca (for elem in ary
 	   (alert elem)))
