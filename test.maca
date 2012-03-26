@@ -150,6 +150,9 @@
 ;; and this is not valid
 (maca (obj > child 2 2 > 4))			;obj.child(2,2,>,4);
 
+(maca (obj > '(if (even n)
+				 (/ n 2)
+				 (+ (/ n 2) 1))))
 
 
 (maca (obj > 2 > "key"))

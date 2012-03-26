@@ -136,7 +136,7 @@
 			   (format t "done.~%"))))))
 
 (defun value (arg)
-  `(value ,arg))
+  (list 'value arg))
 
 (defmacro value-if (need-value arg)
   `(if ,need-value
@@ -217,7 +217,7 @@
 ;; function and function calls
 
 (defparameter *functions*
-  '(((list* 'global sentences)          (rewrite m-global sentences))
+  '(((list 'global sentences)          (rewrite m-global sentences))
 	((list* '-> (list* args) body)      (rewrite m-function args body))
 	((list* '=> (list* args) body)      (rewrite m-inherit-this-function args body))
 	((list* '-/> (list* args) body)     (rewrite m-procedure-function args body))
@@ -237,7 +237,6 @@
 
 (defmaca m-global (body)
   (let ((raw (compile-in-advance env body)))
-	;;(break "~a" +cl+)
     `(glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
 		   (,@(nreverse +initializations+))
 		   ,raw)))
@@ -326,12 +325,13 @@
        `(glue ,op (paren (comma ,@args)))))
 
 (defparameter *non-sentence-ops*
-  '(var for switch while do))
+  '(var if for switch while do))
 
 (defmaca m-sentences (sents)
   `(glue ,@(mapcar
 			#'(lambda (sent) 
-				(ifmatch (list 'var _) sent
+				(ifmatch (when (member keyword *non-sentence-ops*)
+						   (list* keyword _)) sent
 					sent
 					`(glue ,sent semicolon newline)))
 			sents)))
@@ -485,7 +485,7 @@
 			 ,(1-or-2-line then temp)
 			 ,(when else (1-or-2-line else temp))))
 	  `(glue if (paren ,condition) (blk ,then)
-			 ,@(when else `(else (blk ,else))))))
+ 			 ,@(when else `(else (blk ,else))))))
 
 (defmaca m-while (condition body)
   (if need-value
@@ -556,34 +556,31 @@
   '(= += -= *= /= <<= >>= >>>= &= ^= |\|=| and= or= not=))
 
 (defmaca m-assignments (op to from)
-  `(glue ,to space ,op space ,from))
+  `(glue ,to space ,op space (value ,from)))
 
 (defparameter *infixes* 
   '(+ - * / % << >> >>> in && |\|\|| and or))
 
 (defmaca m-infix (op vars)
-  `(paren (glue ,(car vars) space ,op space
-				,(if (third vars) 
-					 `(,op ,@(cdr vars))
-					 (cadr vars)))))
+  `(paren (glue (value ,(car vars)) ,op 
+				(value ,(if (third vars) 
+							`(,op ,@(cdr vars))
+							(cadr vars))))))
 
 (defparameter *comparisons* 
   '(== != === !== > < >= <=))
 
 (defmaca m-comparison (op vars)
-  (if (third vars)
-      `(glue (paren (glue ,(first vars) ,op ,(second vars)))
-			 &&
-			 (,op ,@(cdr vars)))
-      `(paren (glue ,(first vars) ,op ,(second vars)))))
-
+  `(glue (paren (glue (value ,(first vars)) ,op (value ,(second vars))))
+		 ,@(if (third vars)
+			   `(&& (,op ,@(cdr vars))))))
 
 (defparameter *mono-ops*
   '(++ -- ^ ~ ! not
     new set get typeof instanceof
     void delete continue))
 (defmaca m-mono-ops (op &optional val)
-  `(paren (glue ,op space ,@(when val (list val)))))
+  `(paren (glue ,op space ,@(when val (list 'value val)))))
 
 ;; -----------------------------
 ;; array and object literals
@@ -635,7 +632,7 @@
 		`(blk (comma ,@pairs)))))
 
 (defmaca m-direct-accessor (obj child more)
-  `(glue ,obj (bracket ,child)
+  `(glue ,obj (bracket (value ,child))
 		 ,(when more
 				`(nil ,@more))))
 
