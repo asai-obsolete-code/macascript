@@ -33,11 +33,11 @@
 	 (error "invalid try-catch statement"))))
 
 (defmaca m-? (condition then &optional (else 'undefined))
-  `(glue (paren (value ,condition))
-		 ?
-		 (paren (value ,then))
-		 colon
-		 (paren (value ,else))))
+  `(paren (glue (paren (value ,condition))
+		?
+		(paren (value ,then))
+		colon
+		(paren (value ,else)))))
 
 (defmaca m-if-? (thing then &optional else)
   (if need-value
@@ -55,7 +55,7 @@
 			`(if? ,to
 				  (= ,to ,from))))
 
-(defun return-last (sents temp-val)
+(defun return-last-set-temp (sents temp-val)
   `(,@(butlast sents)
 	(= ,temp-val ,@(last sents))))
 
@@ -66,32 +66,36 @@
 (defun atom-or-op (arg)
   (or (atom arg) (atom (car arg))))
 
-(defun 1-or-2-line (arg temp)
+(defun 1-or-2-line-set-temp (arg temp)
   (if (atom-or-op arg)
 	  `((= ,temp ,arg))
 	  (return-last arg temp)))
 
+(defun 1-or-2-line (arg)
+  (if (atom-or-op arg)
+      (list arg)
+      arg))
+
 (defmaca m-if (condition then &optional else)
   (if need-value
-	  (with-temp (temp)
-		`(if ,condition
-			 ,(1-or-2-line then temp)
-			 ,(when else (1-or-2-line else temp))))
-	  `(glue if (paren ,condition) (blk ,then)
- 			 ,@(when else `(else (blk ,else))))))
+      `(? ,condition
+	  (comma ,@(1-or-2-line then))
+	  ,(when else `(comma ,@(1-or-2-line else))))
+      `(glue if (paren ,condition) (blk ,then)
+	     ,@(when else `(else (blk ,else))))))
 
 (defmaca m-while (condition body)
   (if need-value
 	  (with-temp (temp)
 		`(while ,condition
-		   ,(1-or-2-line body temp)))
+		   ,(1-or-2-line-set-temp body temp)))
 	  `(glue while (paren ,condition)
 			 (blk ,body))))
 
 (defmaca m-do-while (condition body)
   (if need-value
 	  (with-temp (temp)
-		`(do ,(1-or-2-line body temp) while ,condition))
+		`(do ,(1-or-2-line-set-temp body temp) while ,condition))
 	  `(glue do (blk ,body)
 			 while
 			 (paren ,condition))))

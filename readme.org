@@ -110,7 +110,8 @@ function(a){
 var d,e,f,g,temp1248,temp1249;
 if(a(b,c)){
 d = (a-(b-c))e = (a==b)&&(b==c)&&(c==d)}else{
-f = [a,b(c),(1+(2+3))]g = {
+f = [a,b(c),(1+(2+3))];
+g = {
 c:(1+(2+3)),b:b(c),a:a}}if(((a!==undefined)&&((typeof a)!=="undefined"))){
 b}else{
 c};

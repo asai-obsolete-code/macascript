@@ -14,10 +14,10 @@
 (defmaca m-sentences (sents)
   `(glue ,@(mapcar
 			#'(lambda (sent) 
-				(ifmatch (when (member keyword *non-sentence-ops*)
-						   (list* keyword _)) sent
-					sent
-					`(glue ,sent semicolon newline)))
+				;; (ifmatch (when (member keyword *non-sentence-ops*)
+				;; 		   (list* keyword _)) sent
+				;; 	sent
+				  `(glue ,sent semicolon newline));)
 			sents)))
 
 (recompile)
