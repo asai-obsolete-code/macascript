@@ -35,7 +35,7 @@ Moreover, since coffeescript TRIES TO OMIT PARENTHESES, it must use
 the parser. It makes the source code complicated and
 PROCEDURAL. Procedual, so its not easy to extend.
 
-* Let's extend the syntax
+* Extend the syntax
 
 The macascript source code is really simple because the parsing of the
 S-expression tree relies on pattern matching provided with cl-match.
@@ -65,23 +65,17 @@ Have fun extending js syntax!
   + anaphora : I don't use it so much, but it's sometimes useful.
 
 ** run
-
 the code is just experimental yet.
 so open the REPL in the repository and input these code to the interpreter: 
 
-if your implementation supports 'require:
-
-       (require 'macascript)
-       (in-package :maca)
-
-or else:
-
-       (asdf:operate 'asdf:load-op 'macascript)
-       (in-package :maca)
-
++ if your implementation supports 'require:
+  + (require 'macascript)
+  + (in-package :maca)
++ or else:
+  + (asdf:operate 'asdf:load-op 'macascript)
+  + (in-package :maca)
 
 * Examples
-
 ** Fundamentals
 
 #+BEGIN_SRC lisp
@@ -168,173 +162,12 @@ $("button").click(f1229);
 }
 #+END_SRC
 
-** Try-Catch-Finally
+** other supported syntaxes
 
-#+BEGIN_SRC lisp
-(maca           ;; try-catch-finally
-          (try ((drink 3 "beer")
-                (eat 5 pizza))
-               catch (x)
-               ((if (== x "drunkTooMuch")
-                    (puke)
-                    (take digestive)))
-               finally
-               ((pay money)
-                (go home))))
-#+END_SRC
-
-#+BEGIN_SRC js
-try{
-drink(3,"beer");
-eat(5,pizza);
-}catch(x){
-if((x=="drunkTooMuch")){
-puke()}else({
-take(digestive)});
-}finally{
-pay(money);
-go(home);
-}
-#+END_SRC
-
-** Iteration
-
-#+BEGIN_SRC lisp
-(maca ;; iteration
-          (for elem in ary         (alert elem))
-          (for elem i in ary       (alert elem i))
-          (for elem of obj         (alert elem))
-          (for elem key of ary     (alert elem i))
-          (for own elem key of ary (alert elem i))
-          (for own elem of ary     (alert elem i))
-          (for ((var i 0) (< i 10) (++ i))
-            (alert "hello!")
-            (alert i)))
-#+END_SRC
-
-#+BEGIN_SRC js
-var g1707,ref1709,l1708,ref1711,l1710,g1712,ref1713,ref1714,key,ref1715,elem,own,ref1716,i;
-ref1709 = ary;
-l1708 = ref1709.length;
-for(g1707 = 0;
-(g1707<l1708);
-(++ g1707);
-){
-elem = ref1709[g1707];
-alert(elem);
-};
-ref1711 = ary;
-l1710 = ref1711.length;
-for(i = 0;
-(i<l1710);
-(++ i);
-){
-elem = ref1711[i];
-alert(elem,i);
-};
-ref1713 = obj;
-for((g1712 in obj)){
-elem = ref1713[g1712];
-alert(elem);
-};
-ref1714 = ary;
-for((key in ary)){
-elem = ref1714[key];
-alert(elem,i);
-};
-ref1715 = ary;
-for((key in ary)){
-elem = ref1715[key];
-if((! elem.hasownproperty(key))){ // ouch, this is a bug
-continue()};
-alert(elem,i);
-};
-ref1716 = ary;
-for((elem in ary)){
-own = ref1716[elem];
-alert(elem,i);
-};
-for(i = 0;
-(i<10);
-(++ i);
-){
-alert("hello!");
-alert(i);
-};
-#+END_SRC
-
-** while and do-while
-
-#+BEGIN_SRC lisp
-(maca          ;; while and do-while
-          (while true
-            ((alert "Let's do it tomorrow")
-             (alert "Let's do it tomorrow")))
-
-          ;; good methodology
-          (do 
-           ((alert "Let's do it now")
-            (alert "hush hush")
-            (alert "hush hush"))
-           while (not tired))) ;; not is an alias for !
-#+END_SRC
-
-#+BEGIN_SRC js
-while(true){
-alert("Let's do it tomorrow");
-alert("Let's do it tomorrow");
-};
-do{
-alert("Let's do it now");
-alert("hush hush");
-alert("hush hush");
-}while((! tired));
-#+END_SRC
-
-** switch
-
-#+BEGIN_SRC lisp
-(maca ;; switch
-          (switch x
-            (case 1
-              (alert x))                        ;1 case 1 statement
-            (case 2                             ;1 case 2 statements
-              (alert 22)
-              (alert 22))
-            (cases (3 4)                        ;2 cases 1 statements
-                   (alert x))
-            (cases ((sqrt 2)
-                    (sqrt 3))           ;2 cases 2 statements
-                   (alert x) 
-                   (alert x))
-            (default
-                (alert "default")
-                (alert "default")
-              (alert "default"))))       ;defaults
-#+END_SRC
-
-#+BEGIN_SRC js
-switch(x){
-case 1:alert(x);
-break;
-case 2:alert(22);
-alert(22);
-break;
-
-case 3:
-case 4:alert(x);
-break;
-
-case sqrt(2):
-case sqrt(3):alert(x);
-alert(x);
-break;
-default:alert("default");
-alert("default");
-alert("default");
-; //bug
-}
-#+END_SRC
++ Try-Catch-Finally
++ Iteration (which returns values)
++ while, do-while (which returns a value)
++ switch
 
 ** Using defmaca to define a new syntax
 
