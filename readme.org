@@ -97,30 +97,36 @@ so open the REPL in the repository and input these code to the interpreter:
           (obj >>)
           ;; existantial accessor
           (a ? b ? c)
+
+	  ;; if-statement with returning a value
+	  ;; and alias from "or" to ||, "and" to &&
+	  (or ((if a b c) > '(if d e f)) (and (x a) (x b)))
 	  ;; implicit return
 	  a))
 #+END_SRC
 
 #+BEGIN_SRC js
 function(a){
-var d,e,f,g;
+var d,e,f,g,temp1236;
 if(a(b,c)){
-d = (a - (b - c));
-e = (a==b)&&(b==c)&&(c==d);
-}else({
-f = [a,b(c),(1 + (2 + 3))];
-g = {
-c:(1 + (2 + 3)),b:b(c),a:a};
-});
-if(((a!==undefined) && ((typeof a)!=="undefined"))){
-b}else({
-c});
+d = (a-(b-c))e = (a==b)&&(b==c)&&(c==d)}else{
+f = [a,b(c),(1+(2+3))]g = {
+c:(1+(2+3)),b:b(c),a:a}}if(((a!==undefined)&&((typeof valuea)!=="undefined"))){
+b}else{
+c};
 granpa.parent.obj.child(2).grandchild(3,4,5);
 obj[2]["key"][key][key];
 obj.prototype.child.grandchild;
 obj.prototype.method(a);
 obj.prototype;
-(((g1683 = a.b)!=undefined))?((((g1684 = g1683.c)!=undefined))?(g1684):((void 0))):((void 0));
+(((g1234 = a.b)!=undefined))?((((g1235 = g1234.c)!=undefined))?(g1235):((void value0))):((void value0));
+(if(a){
+b}else{
+c}[(if(d){
+temp1236 = e;
+}else{
+temp1236 = f;
+},temp1236)]||(x(a)&&x(b)));
 return(a);
 }
 #+END_SRC
