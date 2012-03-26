@@ -47,4 +47,4 @@
     new set get typeof instanceof
     void delete continue))
 (defmaca m-mono-ops (op &optional val)
-  `(paren (glue ,op space ,@(when val (list 'value val)))))
+  `(paren (glue ,op space ,(when val (list 'value val)))))
