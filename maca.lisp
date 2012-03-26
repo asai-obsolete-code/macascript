@@ -241,7 +241,6 @@
 		   (,@(nreverse +initializations+))
 		   ,raw)))
 
-
 (defmaca m-function (args body)
   (check-args args
     `(glue function (paren (comma ,@args))
@@ -323,18 +322,6 @@
   (aif (expand-inline op args env)
        it
        `(glue ,op (paren (comma ,@args)))))
-
-(defparameter *non-sentence-ops*
-  '(var if for switch while do))
-
-(defmaca m-sentences (sents)
-  `(glue ,@(mapcar
-			#'(lambda (sent) 
-				(ifmatch (when (member keyword *non-sentence-ops*)
-						   (list* keyword _)) sent
-					sent
-					`(glue ,sent semicolon newline)))
-			sents)))
   
 ;; -----------------------------
 ;; iteration
@@ -669,15 +656,18 @@
 	((list) (values nil 'null))
 	((list* sentences)                        (rewrite m-sentences sentences))))
 
+(defparameter *non-sentence-ops*
+  '(var if for switch while do))
+
+(defmaca m-sentences (sents)
+  `(glue ,@(mapcar
+			#'(lambda (sent) 
+				(ifmatch (when (member keyword *non-sentence-ops*)
+						   (list* keyword _)) sent
+					sent
+					`(glue ,sent semicolon newline)))
+			sents)))
+
 (recompile)
 (setf *recompile-compiler* t)
 
-(defmacro maca (&body body)
-  `(progn
-     (multiple-value-bind (value type)
-		 ,(if (typep (car body) 'atom)
-			  `(m-compile t (list (make-closure)) t ',@body)
-			  `(m-compile t (list (make-closure)) t '(global ,@body)))
-       (declare (ignore value))
-       (format t "~%")
-       type)))
