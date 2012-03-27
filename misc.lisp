@@ -3,7 +3,7 @@
 (defparameter *customs* nil)
 (defparameter *miscellaneous*
   '( ;;for the evaluation of single atom at the top level
-	((type atom val) (values (m-glue s env nil (list val)) (type-of val))) 
+	((type atom val) (values (m-glue s env nil nil (list val)) (type-of val))) 
 	((list* (type atom op) arguments)         (rewrite m-function-call op arguments))
 	((list) (values nil 'null))
 	((list* sentences)                        (rewrite m-sentences sentences))))

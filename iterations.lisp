@@ -45,15 +45,17 @@
 			(= ,val (,ref > ',key))
 			,@body)))))
 
-(defmaca m-iter-obj (val obj body &key (key (gensym)) own)
+(defmaca (m-iter-obj :environment env
+					 :temporary-return temp
+					 :stream s)
+	(val obj body &key (key (gensym)) own)
   (if need-value
-	  (with-temp (result)
-		`((= ,result (new (|Object|)))
-		  (for ,val ,key of ,obj 
-			   ,(if (atom-or-op body)
-					`(= (,result > ',key) (value ,body))
-					`(,@(butlast body)
-						(= (,result > ',key) (value ,@(last body))))))))
+	  `((= ,temp (new (|Object|)))
+		(for ,val ,key of ,obj
+			 ,(if (atom-or-op body)
+				  `(= (,result > ',key) (value ,body))
+				  `(,@(butlast body)
+					  (= (,result > ',key) (value ,@(last body))))))))
 	  (let ((ref (gensym "ref")))
 		`((var ,key)
 		  (var ,val)

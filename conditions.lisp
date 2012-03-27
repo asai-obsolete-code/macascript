@@ -51,11 +51,11 @@
 		   ,else)))
 
 (defmaca m-assign-if-exist (to from)
-  (value-if need-value
-			`(if? ,to
-				  (= ,to ,from))))
+  (if need-value
+	  `(value (if? ,to (= ,to ,from)))
+	  `(if? ,to (= ,to ,from))))
 
-(defun return-last-set-temp (sents temp-val)
+(defun save-last-statement (sents temp-val)
   `(,@(butlast sents)
 	(= ,temp-val ,@(last sents))))
 
@@ -69,36 +69,25 @@
 (defun 1-or-2-line-set-temp (arg temp)
   (if (atom-or-op arg)
 	  `((= ,temp ,arg))
-	  (return-last arg temp)))
+	  (save-last-statement arg temp)))
 
 (defun 1-or-2-line (arg)
   (if (atom-or-op arg)
       (list arg)
       arg))
 
-(defmaca m-if (condition then &optional else)
-  (if need-value
-      `(? ,condition
-	  (comma ,@(1-or-2-line then))
-	  ,(when else `(comma ,@(1-or-2-line else))))
-      `(glue if (paren ,condition) (blk ,then)
-	     ,@(when else `(else (blk ,else))))))
+(defmaca (m-if :stream s :environment env) (condition then &optional else)
+  `(glue if (paren ,condition) (blk ,then)
+		 ,@(when else `(else (blk ,else)))))
 
 (defmaca m-while (condition body)
-  (if need-value
-	  (with-temp (temp)
-		`(while ,condition
-		   ,(1-or-2-line-set-temp body temp)))
-	  `(glue while (paren ,condition)
-			 (blk ,body))))
+  `(glue while (paren ,condition)
+		 (blk ,body)))
 
 (defmaca m-do-while (condition body)
-  (if need-value
-	  (with-temp (temp)
-		`(do ,(1-or-2-line-set-temp body temp) while ,condition))
-	  `(glue do (blk ,body)
-			 while
-			 (paren ,condition))))
+  `(glue do (blk ,body)
+		 while
+		 (paren ,condition)))
 
 (defmaca m-label (name body)
   `(glue ,name colon (blk ,body)))

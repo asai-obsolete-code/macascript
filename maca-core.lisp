@@ -1,11 +1,22 @@
-(ql:quickload :alexandria)
-(ql:quickload :cl-match)
-(ql:quickload :anaphora)
+
+;; (ql:quickload :alexandria)
+;; (ql:quickload :cl-match)
+;; (ql:quickload :anaphora)
+
+
+;; (load "maca-core")
+;; (load "fundamentals")
+;; (load "functions")
+;; (load "iterations")
+;; (load "conditions")
+;; (load "ops")
+;; (load "literals")
+;; (load "misc")
 
 (defpackage maca
   (:use :common-lisp :cl-user :alexandria :cl-match :anaphora))
 
-(proclaim '(optimize (debug 3) (safety 3)))
+(proclaim '(optimize (debug 3)))
 (in-package :maca)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,6 +92,17 @@
     (comment . \\))
   "alist for aliasing the constants such as \"on\" \"yes\".")
 
+(defparameter *recompile-compiler* t)
+(defparameter *customs* nil)
+(defparameter *conditions* nil)
+(defparameter *core-ops* nil)
+(defparameter *fundamentals* nil)
+(defparameter *iteraters* nil)
+(defparameter *objects* nil)
+(defparameter *fundamentals* nil)
+(defparameter *miscellaneous* nil)
+(defparameter *functions* nil)
+
 ;; core macros
 
 (defun show-patterns ()
@@ -93,8 +115,6 @@
 		  *fundamentals*
 		  *miscellaneous*))
 
-(defparameter *recompile-compiler* nil)
-
 (defstruct closure
   (indentation 0)
   (arguments nil)
@@ -103,44 +123,66 @@
   (inline-lambda nil))
 
 (defmacro recompile ()
-  `(defun m-compile (s env need-value lst)
+  `(defun m-compile (s env lst &key temp need-value)
 	 (macrolet ((rewrite (name &rest args)
-				  `(values (,name s env need-value ,@args) ',name)))
-	   (match lst
-		 ,@(copy-tree *customs*)
-		 ,@(copy-tree *core-ops*)
-		 ,@(copy-tree *functions*)
-		 ,@(copy-tree *iteraters*)
-		 ,@(copy-tree *conditions*)
-		 ,@(copy-tree *objects*)
-		 ,@(copy-tree *fundamentals*)
-		 ,@(copy-tree *miscellaneous*)))))
+				  `(values (,name s env temp need-value ,@args) ',name)))
+	   (if s
+		   (match lst
+			 ,@(copy-tree *customs*)
+			 ,@(copy-tree *core-ops*)
+			 ,@(copy-tree *functions*)
+			 ,@(copy-tree *iteraters*)
+			 ,@(copy-tree *conditions*)
+			 ,@(copy-tree *objects*)
+			 ,@(copy-tree *fundamentals*)
+			 ,@(copy-tree *miscellaneous*))
+		   (with-output-to-string (s)
+			 (match lst
+			   ,@(copy-tree *customs*)
+			   ,@(copy-tree *core-ops*)
+			   ,@(copy-tree *functions*)
+			   ,@(copy-tree *iteraters*)
+			   ,@(copy-tree *conditions*)
+			   ,@(copy-tree *objects*)
+			   ,@(copy-tree *fundamentals*)
+			   ,@(copy-tree *miscellaneous*)))))))
 
-;; you can perform some bad behavior on "env". it is intentional
-(defmacro defmaca (name args &body body)
-  (with-gensyms (s definition)
+(defmacro defmaca (name-or-name-and-options args &body body)
+  (if (symbolp name-or-name-and-options)
+	  `(defmaca-builder (,name-or-name-and-options) ,args ,body)
+	  `(defmaca-builder ,name-or-name-and-options ,args ,body)))
+
+(defmacro defmaca-builder ((name &key
+								 (stream (gensym "s"))
+								 (environment (gensym "e"))
+								 (temporary-return (gensym "tmp")))
+						   args body)
+  (with-gensyms (definition)
     `(progn
-	   (defun ,name (,s env need-value ,@args)
-		 (symbol-macrolet ((+cl+ (car env))
-						   (+indentation+ (closure-indentation (car env)))
-						   (+variables+ (closure-variables (car env)))
-						   (+initializations+ (closure-initializations (car env)))
-						   (+inline-lambda+ (closure-inline-lambda (car env)))
-						   (+arguments+ (closure-arguments (car env))))
+	   (defun ,name (,stream ,environment ,temporary-return need-value ,@args)
+		 (declare (ignorable need-value))
+		 (symbol-macrolet ((+cl+ (car ,environment))
+						   (+indentation+ (closure-indentation (car ,environment)))
+						   (+variables+ (closure-variables (car ,environment)))
+						   (+initializations+ (closure-initializations (car ,environment)))
+						   (+inline-lambda+ (closure-inline-lambda (car ,environment)))
+						   (+arguments+ (closure-arguments (car ,environment))))
 		   (let* ((next-need-value nil)
 				  (,definition (progn ,@body)))
-			 (m-compile ,s env next-need-value ,definition))))
+			 (declare (ignorable next-need-value))
+			 (m-compile ,stream ,environment ,definition ,temporary-return next-need-value))))
 	   ,@(if *recompile-compiler*
 			 `((format t "recompiling m-compile ...")
 			   (recompile)
-			   (format t "done.~%"))))))
+			   (format t "done.~%")))
+	   #',name)))
 
 (defmacro maca (&body body)
   `(progn
      (multiple-value-bind (value type)
 		 ,(if (typep (car body) 'atom)
-			  `(m-compile t (list (make-closure)) t ',@body)
-			  `(m-compile t (list (make-closure)) t '(global ,@body)))
+			  `(m-compile t (list (make-closure)) ',@body)
+			  `(m-compile t (list (make-closure)) '(global ,@body)))
        (declare (ignore value))
        (format t "~%")
        type)))

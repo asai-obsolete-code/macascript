@@ -11,43 +11,45 @@
 	((list* '=/> (list* args) body)     (rewrite m-inherit-this-procedure-function args body))
 	((list* '-/ name (list* args) body) (rewrite m-inline-function name args body))))
 
-(defmacro compile-in-advance (env script)
-  `(list 'raw-string 
-		 (with-output-to-string (s)
-		   (m-compile s ,env nil ,script))))
-
 (defmacro check-args (args &body body)
   `(let ((args (flatten ,args)))
      (cond ((not-uniquep args)        (error "duplicated args: ~a" (not-unique args)))
 		   ((notevery #'symbolp args) (error "invalid args:~a" args))
 		   (t ,@body))))
 
-(defmaca m-global (body)
-  (let ((raw (compile-in-advance env body)))
-    `(glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
-		   (,@(nreverse +initializations+))
-		   ,raw)))
+;; ----------------------------------------------------------------
+;; m-global and m-function, m-procedure-function has the similar definitions
+;; 
 
-(defmaca m-function (args body)
-  (check-args args
-    `(glue function (paren (comma ,@args))
-		   ,(let* ((cl (make-closure :arguments args))
-				   (raw (compile-in-advance (cons cl env)
-											`(,@(butlast body)
-												(return ,(car (last body)))))))
-				  `(blk (glue ,(aif (closure-variables cl)
-									`((glue var space (comma ,@(uniquify it)))))
-							  (,@(nreverse (closure-initializations cl)))
-							  ,raw))))))
+(defmaca (m-global :environment env :stream s) (body)
+  (let ((str (m-compile nil env `(,@(butlast body) (return ,@(last body))))))
+	(m-compile s env `(blk (glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
+								 (,@(nreverse +initializations+)))))
+	(write-string str s)
+	nil))
 
-(defmaca m-procedure-function (args body)
+(defmaca (m-function :environment env :stream s) (args body)
   (check-args args
-    `(glue function (paren (comma ,@args))
-		   ,(let* ((cl (make-closure :arguments args))
-				   (raw (compile-in-advance (cons cl env) body)))
-				  `(blk (glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
-							  (,@(nreverse (closure-initializations cl)))
-							  ,raw))))))
+	(m-compile s env `(glue function (paren (comma ,@args))))
+	(let ((cl (make-closure :arguments args)))
+	  (let ((str (m-compile nil (cons cl env) `(,@(butlast body) (return ,@(last body))))))
+		(m-compile s env `(blk (glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
+									 (,@(nreverse +initializations+)))))
+		(write-string str s)
+		nil))))
+
+(defmaca (m-procedure-function :environment env :stream s) (args body)
+  (check-args args
+	(m-compile s env `(glue function (paren (comma ,@args))))
+	(let ((cl (make-closure :arguments args)))
+	  (let ((str (m-compile nil (cons cl env) body)))
+		(m-compile s env `(blk (glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
+									 (,@(nreverse +initializations+)))))
+		(write-string str s)
+		nil))))
+
+;; ----------------------------------------------------------------
+;; inherit functions
 
 (defun insert-initialization (cl &rest var-val-plist)
   (labels ((rec (plist)
@@ -72,14 +74,17 @@
   (let ((this (gensym "t"))
 		(fn (gensym "f")))
     (insert-initialization
-     (car env)
+	 +cl+
      this 'this 
      fn `(-/> ,args ,@(subst this 'this body)))
     fn))
 
 (defmaca m-inline-function (name args body)
-  (setf (getf (closure-inline-lambda (car env)) name) (cons args body))
+  (setf (getf +inline-lambda+ name) (cons args body))
   nil)
+
+;; ----------------------------------------------------------------
+;; inline function
 
 (defun search-lambda (name env)
   (if env
@@ -105,7 +110,7 @@
 		  `(paren (comma ,@copying-script
 						 ,@body)))))))
 
-(defmaca m-function-call (op args)
+(defmaca (m-function-call :environment env) (op args)
   (aif (expand-inline op args env)
        it
        `(glue ,op (paren (comma ,@args)))))

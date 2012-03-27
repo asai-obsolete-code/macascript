@@ -25,14 +25,6 @@
 	((list 'quote (list* elems))
 	 (rewrite m-array elems))))
 
-(defun plist-to-alist (plist)
-  (labels ((rec (p a)
-			 (if p
-				 (rec (cddr p) 
-					  (cons (cons (car p) (cadr p)) a))
-				 a)))
-    (rec plist nil)))
-
 (defmaca m-alias-this (val)
   (let ((property (make-symbol (subseq (symbol-name val) 1))))
 	`(this > ,property)))
@@ -43,11 +35,9 @@
 (defmaca m-obj (key-value-plist)
   (if (oddp (length key-value-plist))
       (error "invalid object literal")
-      (let* ((alist (plist-to-alist key-value-plist))
-			 (pairs (mapcar #'(lambda (cons)
-								`(glue ,(car cons) colon (value ,(cdr cons))))
-							alist)))
-		`(blk (comma ,@pairs)))))
+	  `(blk (comma ,@(mapcar #'(lambda (cons)
+								 `(glue ,(car cons) colon (value ,(cdr cons))))
+							 (plist-alist key-value-plist))))))
 
 (defmaca m-direct-accessor (obj child more)
   `(glue (value ,obj) (bracket (value ,child))
