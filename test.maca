@@ -9,7 +9,6 @@
 (maca (comma a b c))
 (maca (blk ((a b c))))
 (maca (bracket a))
-(maca (a b (raw-string "aaa vvv") c))
 
 ;; constants
 (maca undefined)
@@ -59,16 +58,16 @@
 ;; normal function: returns the final expression
 
 (maca (-> (a b c)
-	  (= d (- a b c))
-	  (var e 2)
-	  (+ a b c d e)))
+		  (= d (- a b c))
+		  (var e 2)
+		  (+ a b c d e)))
 
 (maca (-> (a)
 	  (alert a)
 	  (-> (b)
 	      (if (< b 3)
-		  (var a (- 3 b))
-		  (var a (- b 3)))
+			  (var a (- 3 b))
+			  (var a (- b 3)))
 	      (var c (+ a 3))
 	      (alert a b)
 	      a)))
@@ -91,7 +90,6 @@
 					   (other-operation b)))
       (= foo (baz foo bar)))
 
-;; this is not ok
 (maca (foo)
       (bar foo)
       (-/ baz (a b) (+ (some-operation a)
@@ -101,8 +99,12 @@
 
 ;; conditional expression
 
-(maca (value (if (a b c)
-				 (= d (- a b c)))))
+(maca (return (if (> a b) a b)))
+
+(maca (-> ()
+		  ((if (> a b) a b)
+		   > '(if (> c d) c d)
+		   > content)))
 
 (maca (value (if (a b c) (- a b c))))
 
@@ -149,6 +151,9 @@
 (maca (obj > (child 2 2) > 4))			;obj.child(2,2)[4];
 ;; and this is not valid
 (maca (obj > child 2 2 > 4))			;obj.child(2,2,>,4);
+
+
+
 
 (maca (obj > '(if (even n)
 				 (/ n 2)

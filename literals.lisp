@@ -11,44 +11,49 @@
 
 (defparameter *objects*
   '(((when (char= #\@ (aref (symbol-name val) 0)) (type symbol val))
-	 (rewrite m-alias-this val))
+	 (rewrite m-alias-this t val))
 	((list* obj '> (direct-specifier child) more)
-	 (rewrite m-direct-accessor obj child more))
+	 (rewrite m-direct-accessor t obj child more))
 	((list* obj '> more)
-	 (rewrite m-accessor obj more))
+	 (rewrite m-accessor t obj more))
 	((list* obj '? more)
-	 (rewrite m-exist-accessor obj more))
+	 (rewrite m-exist-accessor t obj more))
 	((list* obj '>> more)
-	 (rewrite m-prototype-accessor obj more))
+	 (rewrite m-prototype-accessor t obj more))
 	((list* (type keyword key) rest)
-	 (rewrite m-obj lst))
+	 (rewrite m-obj t lst))
 	((list 'quote (list* elems))
-	 (rewrite m-array elems))))
+	 (rewrite m-array t elems))))
 
 (defmaca m-alias-this (val)
   (let ((property (make-symbol (subseq (symbol-name val) 1))))
 	`(this > ,property)))
 
-(defmaca m-array (args)
-  `(bracket (comma ,@(mapcar #'value args))))
+(defmaca (m-array :environment env) (args)
+  (with-set-temps-in-list (env args contents)
+	`(bracket (comma ,@contents))))
 
-(defmaca m-obj (key-value-plist)
+(defmaca (m-obj :environment env) (key-value-plist)
   (if (oddp (length key-value-plist))
       (error "invalid object literal")
-	  `(blk (comma ,@(mapcar #'(lambda (cons)
-								 `(glue ,(car cons) colon (value ,(cdr cons))))
-							 (plist-alist key-value-plist))))))
+	  (let ((alist (plist-alist key-value-plist)))
+		(with-set-temps-in-list (env (mapcar #'cdr alist) contents)
+		  `(blk (comma ,@(mapcar #'(lambda (key content)
+									 `(glue ,key colon ,content))
+								 (mapcar #'car alist) contents)))))))
 
-(defmaca m-direct-accessor (obj child more)
-  `(glue (value ,obj) (bracket (value ,child))
-		 ,(when more
-				`(nil ,@more))))
+(defmaca (m-direct-accessor :environment env) (obj child more)
+  (with-set-temp env (obj child)
+	`(glue ,obj (bracket ,child)
+		   ,(when more
+				  `(nil ,@more)))))
 
-(defmaca m-accessor (obj accessor)
-  `(glue ,obj period
-		 ,(if (cdr accessor)
-			  accessor
-			  (car accessor))))
+(defmaca (m-accessor :environment env) (obj accessor)
+  (with-set-temp env (obj)
+	`(glue ,obj period
+		   ,(if (cdr accessor)
+				accessor
+				(car accessor)))))
 
 (defmaca m-exist-accessor (obj accessor)
   (let ((ref (gensym))

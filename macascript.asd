@@ -7,6 +7,7 @@
     :licence "Public Domain"
 	:depends-on (:cl-match :alexandria :anaphora)
 	:components ((:file "maca-core")
+				 (:file "utilities")
 				 (:file "fundamentals")
 				 (:file "functions")
 				 (:file "iterations")
