@@ -75,6 +75,8 @@
 (defparameter *miscellaneous* nil)
 (defparameter *functions* nil)
 
+(defparameter *indentation* 0)
+
 ;; core macros
 
 (defun show-patterns ()
@@ -89,7 +91,6 @@
 
 
 (defstruct closure
-  (indentation 0)
   (arguments nil)
   (variables nil)
   (initializations nil)
@@ -121,7 +122,6 @@
 	   (defun ,name (,environment ,return ,@args)
 		 (declare (ignorable ,return ,environment))
 		 (symbol-macrolet ((+cl+ (car ,environment))
-						   (+indentation+ (closure-indentation (car ,environment)))
 						   (+variables+ (closure-variables (car ,environment)))
 						   (+initializations+ (closure-initializations (car ,environment)))
 						   (+inline-lambda+ (closure-inline-lambda (car ,environment)))

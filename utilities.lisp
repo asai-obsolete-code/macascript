@@ -32,9 +32,9 @@
 
 (defun 1-or-2-line-set-temp (arg temp)
   (if (atom-or-op arg)
-	  `((= ,temp ,arg))
+	  `((var ,temp ,arg))
 	  `(,@(butlast arg)
-		  (= ,temp ,@(last arg)))))
+		  (var ,temp ,@(last arg)))))
 
 (defun 1-or-2-line (arg)
   (if (atom-or-op arg)

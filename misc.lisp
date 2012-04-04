@@ -1,12 +1,17 @@
 (in-package :maca)
 
+
+(defun indents (n)
+  (loop for i below n collect 'indent))
+
+
 (defparameter *customs* nil)
 (defparameter *miscellaneous*
   '( ;;for the evaluation of single atom at the top level
 	((type string str) (values `(compiled ,(format nil "\"~a\"" str)) t 'string))
 	((list 'newline-and-indent)
 	 (values
-	  `(compiled newline ,@(indents (closure-indentation (car env))))
+	  `(compiled newline ,@(indents *indentation*))
 	  t 'newline-and-indent))
 	((type atom val) (values (m-compile env `(glue ,val)) t (type-of val)))
 	
@@ -17,9 +22,6 @@
 		   (rewrite m-function-call t op arguments))))
 	((list) (values nil t 'null))
 	((list* sentences)                        (rewrite m-sentences nil sentences))))
-
-(defun indents (n)
-  (loop for i below n collect 'indent))
 
 (defmaca (m-function-call :environment env) (op args)
   (with-set-temps-in-list (env args temps)

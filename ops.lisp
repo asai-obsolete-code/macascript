@@ -23,7 +23,7 @@
   '(= += -= *= /= <<= >>= >>>= &= ^= |\|=| and= or= not=))
 
 (defmaca (m-assignments :environment env) (op to from)
-  (with-set-temp env (to from)
+  (with-set-temp env (from)
 	`(glue ,to space ,op space ,from)))
 
 (defparameter *infixes* 
@@ -44,10 +44,11 @@
 (defmaca (m-comparison :environment env) (op vars)
   (let ((arg1 (car vars))
 		(arg2 (cadr vars)))
-	(with-set-temp env (arg1 arg2)
-	  `(glue (paren (glue ,arg1 ,op ,arg2))
-			 ,@(when (third vars)
-					 `(&& (,op ,arg2 ,@(cddr vars))))))))
+	(if (third vars)
+		(with-set-temp env (arg1 arg2)
+		  `(glue (paren (glue ,arg1 ,op ,arg2)) && (,op ,arg2 ,@(cddr vars))))
+		(with-set-temp env (arg2)
+		  `(paren (glue ,arg1 ,op ,arg2))))))
 
 (defparameter *mono-ops*
   '(++ -- ^ ~ ! not

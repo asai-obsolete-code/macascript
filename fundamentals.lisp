@@ -37,9 +37,9 @@
 (defmacro with-indent (env &body body)
   (with-gensyms (contents)
 	`(let ((,contents nil))
-	   (incf +indentation+)
+	   (incf *indentation*)
 	   (setf ,contents (m-compile ,env (progn ,@body)))
-	   (decf +indentation+)
+	   (decf *indentation*)
 	   ,contents)))
 
 (defmaca (m-block :environment env) (arg)

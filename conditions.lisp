@@ -33,11 +33,11 @@
 	 (error "invalid try-catch statement"))))
 
 (defmaca m-? (condition then &optional (else 'undefined))
-  `(paren (glue (paren (value ,condition))
-		?
-		(paren (value ,then))
-		colon
-		(paren (value ,else)))))
+  `(paren (glue (paren ,condition)
+				?
+				(paren ,then)
+				colon
+				(paren ,else))))
 
 (defmaca m-if-? (thing then &optional else)
   `(if (and (!== ,thing null)
@@ -51,9 +51,9 @@
 (defmaca (m-if :environment env
 			   :return temp) (condition then &optional else)
   (if temp
-	  `(if ,condition
-		   ,(1-or-2-line-set-temp then temp)
-		   ,(1-or-2-line-set-temp else temp))
+	  `(? ,condition
+		  (comma ,then)
+		  (comma ,else))
 	  (with-set-temp env (condition)
 		`(glue if (paren ,condition) (blk ,then)
 			   ,@(when else `(else (blk ,else)))))))

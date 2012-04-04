@@ -8,6 +8,8 @@
 (maca (comma (comma a b c) (comma a b c)))
 (maca (comma a b c))
 (maca (blk ((a b c))))
+(maca (blk (
+			(blk ((a b c))))))
 (maca (bracket a))
 
 ;; constants
@@ -34,6 +36,12 @@
 (maca (+ a 3))
 (maca (+ a 3 4))
 (maca (+ a 3 (>>> number 3)))
+
+;; assignments
+
+(maca (= a 3))
+(maca (= a (a > b > v)))
+(maca (a > b > v))
 
 ;; comparison
 (maca (< number 50))
@@ -66,8 +74,9 @@
 	  (alert a)
 	  (-> (b)
 	      (if (< b 3)
-			  (var a (- 3 b))
-			  (var a (- b 3)))
+			  ((var a (- 3 b))
+			   (= b (expr a 5)))
+			  ((var a (- b 3))))
 	      (var c (+ a 3))
 	      (alert a b)
 	      a)))
@@ -101,10 +110,18 @@
 
 (maca (return (if (> a b) a b)))
 
+(maca (-/> ()
+		   ((if (> a b) a b)
+			> '(if (> c d) c d)
+			> content)))
 (maca (-> ()
+		  (a)
 		  ((if (> a b) a b)
-		   > '(if (> c d) c d)
+		   ;;> '(if (> c d) c d)
 		   > content)))
+(maca (-> ()
+		  (a)
+		  (content > (if (> a b) a b))))
 
 (maca (value (if (a b c) (- a b c))))
 

@@ -31,22 +31,30 @@
 (defmaca (m-function :environment env) (args body)
   (check-args args
 	(compile-let* env ((func-header `(glue function (paren (comma ,@args)))))
-	  (let ((cl (make-closure :arguments args)))
-		(compile-let* (cons cl env)
-			((compiled-body `(,@(butlast body) (return ,@(last body))))
-			 (compiled-header `(glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
-									 ,(nreverse (closure-initializations cl)))))
+	  (let* ((cl (make-closure :arguments args))
+			 (new-env (cons cl env)))
+		(compile-let* new-env
+			((compiled-body
+			  (with-indent new-env
+				`(,@(butlast body) (return ,@(last body)))))
+			 (compiled-header
+			  (with-indent new-env
+				`(glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
+					   ,(nreverse (closure-initializations cl))))))
 		  `(glue ,func-header (blk (,@compiled-header ,@compiled-body))))))))
 
 
 (defmaca (m-procedure-function :environment env) (args body)
   (check-args args
 	(compile-let* env ((func-header `(glue function (paren (comma ,@args)))))
-	  (let ((cl (make-closure :arguments args)))
+	  (let* ((cl (make-closure :arguments args))
+			 (new-env (cons cl env)))
 		(compile-let* (cons cl env)
-			((compiled-body body)
-			 (compiled-header `(glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
-									 ,(nreverse (closure-initializations cl)))))
+			((compiled-body (with-indent new-env body))
+			 (compiled-header
+			  (with-indent new-env
+				`(glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
+					   ,(nreverse (closure-initializations cl))))))
 		  `(glue ,func-header (blk (,@compiled-header ,@compiled-body))))))))
 
 ;; ----------------------------------------------------------------
