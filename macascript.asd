@@ -6,14 +6,16 @@
     :author "Masataro Asai <guicho2.71828@gmail.com>"
     :licence "Public Domain"
 	:depends-on (:cl-match :alexandria :anaphora)
-	:components ((:file "maca-core")
+	:components ((:file "core")
 				 (:file "utilities")
 				 (:file "fundamentals")
 				 (:file "functions")
 				 (:file "iterations")
 				 (:file "conditions")
+				 (:file "conditions2")
 				 (:file "ops")
 				 (:file "literals")
+				 (:file "continuation")
 				 (:file "misc"))
 	:serial t)
 

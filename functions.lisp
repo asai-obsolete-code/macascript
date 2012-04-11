@@ -4,12 +4,12 @@
 ;; function and function calls
 
 (defparameter *functions*
-  '(((list 'global sentences)          (rewrite m-global nil sentences))
-	((list* '-> (list* args) body)      (rewrite m-function t args body))
-	((list* '=> (list* args) body)      (rewrite m-inherit-this-function t args body))
-	((list* '-/> (list* args) body)     (rewrite m-procedure-function t args body))
-	((list* '=/> (list* args) body)     (rewrite m-inherit-this-procedure-function t args body))
-	((list* '-/ name (list* args) body) (rewrite m-inline-function nil name args body))))
+  '(((list 'global sentences)          (rewrite m-global sentences))
+	((list* '-> (list* args) body)      (rewrite m-function args body))
+	((list* '=> (list* args) body)      (rewrite m-inherit-this-function args body))
+	((list* '-/> (list* args) body)     (rewrite m-procedure-function args body))
+	((list* '=/> (list* args) body)     (rewrite m-inherit-this-procedure-function args body))
+	((list* '-/ name (list* args) body) (rewrite m-inline-function name args body))))
 
 (defmacro check-args (args &body body)
   `(let ((args (flatten ,args)))
@@ -21,14 +21,14 @@
 ;; m-global and m-function, m-procedure-function has the similar definitions
 ;; 
 
-(defmaca (m-global :environment env) (body)
+(defmaca (m-global :environment env :is-value t) (body)
   (compile-let* env 
 	  ((compiled-body body)
 	   (compiled-header `(glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
 									(,@(nreverse +initializations+)))))
 	`(compiled ,compiled-header ,compiled-body)))
 
-(defmaca (m-function :environment env) (args body)
+(defmaca (m-function :environment env :is-value t) (args body)
   (check-args args
 	(compile-let* env ((func-header `(glue function (paren (comma ,@args)))))
 	  (let* ((cl (make-closure :arguments args))
@@ -44,7 +44,7 @@
 		  `(glue ,func-header (blk (,@compiled-header ,@compiled-body))))))))
 
 
-(defmaca (m-procedure-function :environment env) (args body)
+(defmaca (m-procedure-function :environment env :is-value t) (args body)
   (check-args args
 	(compile-let* env ((func-header `(glue function (paren (comma ,@args)))))
 	  (let* ((cl (make-closure :arguments args))
@@ -60,7 +60,7 @@
 ;; ----------------------------------------------------------------
 ;; inherit functions
 
-(defmaca m-inherit-this-function (args body)
+(defmaca (m-inherit-this-function :is-value t) (args body)
   (let ((this (gensym "t"))
 		(fn (gensym "f")))
     (insert-initialization
@@ -69,7 +69,7 @@
      fn `(-> ,args ,@(subst this 'this body)))
     fn))
 
-(defmaca m-inherit-this-procedure-function (args body)
+(defmaca (m-inherit-this-procedure-function :is-value t) (args body)
   (let ((this (gensym "t"))
 		(fn (gensym "f")))
     (insert-initialization

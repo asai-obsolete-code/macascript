@@ -4,15 +4,15 @@
 ;; iteration
 
 (defparameter *iteraters*
-  '(((list* 'for val 'in array body)               (rewrite m-iter-array nil val array body))
-	((list* 'for val key 'in array body)           (rewrite m-iter-array nil val array body :key key))
-	((list* 'for val 'in array body)               (rewrite m-iter-array nil val array body))
-	((list* 'for val key 'in array body)           (rewrite m-iter-array nil val array body :key key))
-	((list* 'for val 'of array body)               (rewrite m-iter-obj nil val array body))
-	((list* 'for val key 'of array body)           (rewrite m-iter-obj nil val array body :key key))
-	((list* 'for 'own val 'of array body)          (rewrite m-iter-obj nil val array body :own t))
-	((list* 'for 'own val key 'of array body)      (rewrite m-iter-obj nil val array body :key key :own t))
-	((list* 'for (list begin condition next) body) (rewrite m-for nil begin condition next body))))
+  '(((list* 'for val 'in array body)               (rewrite m-iter-array val array body))
+	((list* 'for val key 'in array body)           (rewrite m-iter-array val array body :key key))
+	((list* 'for val 'in array body)               (rewrite m-iter-array val array body))
+	((list* 'for val key 'in array body)           (rewrite m-iter-array val array body :key key))
+	((list* 'for val 'of array body)               (rewrite m-iter-obj val array body))
+	((list* 'for val key 'of array body)           (rewrite m-iter-obj val array body :key key))
+	((list* 'for 'own val 'of array body)          (rewrite m-iter-obj val array body :own t))
+	((list* 'for 'own val key 'of array body)      (rewrite m-iter-obj val array body :key key :own t))
+	((list* 'for (list begin condition next) body) (rewrite m-for begin condition next body))))
 
 (defmaca (m-for :environment env :return result) (begin condition next body)
   (if result
@@ -23,7 +23,8 @@
 	  `(glue for (paren (glue ,begin semicolon ,condition semicolon ,next))
 			 (blk ,body))))
 
-(defmaca (m-iter-array :environment env :return result) (val ary body &key (key (gensym)))
+(defmaca (m-iter-array :environment env :return result)
+	(val ary body &key (key (gensym)))
   (if result
 	  `((= ,result '())
 		(for ,val ,key in ,ary
@@ -44,7 +45,8 @@
 			  (= ,val (,ref > ',key))
 			  ,@body))))))
 
-(defmaca (m-iter-obj :environment env :return result)	(val obj body &key (key (gensym)) own)
+(defmaca (m-iter-obj :environment env :return result)
+	(val obj body &key (key (gensym)) own)
   (if result
 	  `((= ,result (new (|Object|)))
 		(for ,val ,key of ,obj

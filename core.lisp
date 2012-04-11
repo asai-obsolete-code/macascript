@@ -1,20 +1,8 @@
 
-;; (ql:quickload :alexandria)
-;; (ql:quickload :cl-match)
-;; (ql:quickload :anaphora)
-
-
-;; (load "maca-core")
-;; (load "fundamentals")
-;; (load "functions")
-;; (load "iterations")
-;; (load "conditions")
-;; (load "ops")
-;; (load "literals")
-;; (load "misc")
-
 (defpackage maca
-  (:use :common-lisp :cl-user :alexandria :cl-match :anaphora))
+  (:use :common-lisp :cl-user :alexandria :cl-match :anaphora)
+  ;;(:export 'maca 'm-compile 'maca-compile 'maca-format)
+  )
 
 ;;(proclaim '(optimize (debug 3)))
 (declaim (optimize (debug 3)))
@@ -65,9 +53,10 @@
   "alist for aliasing the constants such as \"on\" \"yes\".")
 
 (defparameter *recompile-compiler* nil)
+(defparameter *ops* nil)
 (defparameter *customs* nil)
 (defparameter *conditions* nil)
-(defparameter *core-ops* nil)
+(defparameter *conditions2* nil)
 (defparameter *fundamentals* nil)
 (defparameter *iteraters* nil)
 (defparameter *objects* nil)
@@ -80,15 +69,15 @@
 ;; core macros
 
 (defun show-patterns ()
-  (append *customs*
-		  *core-ops*
+  (append *fundamentals*
+		  *ops*
 		  *functions*
 		  *iteraters*
 		  *conditions*
+		  *conditions2*
 		  *objects*
-		  *fundamentals*
+		  *customs*
 		  *miscellaneous*))
-
 
 (defstruct closure
   (arguments nil)
@@ -98,16 +87,21 @@
 
 (defmacro recompile ()
   `(defun m-compile (env lst &key return)
-	 (macrolet ((rewrite (name is-value &rest args)
-				  `(values (,name env return ,@args) ,is-value ',name)))
+	 (macrolet 
+		 ((rewrite (name &rest args)
+			(with-gensyms (definition is-value-option)
+			  `(multiple-value-bind (,definition ,is-value-option)
+				   (,name env return ,@args)
+				 (values ,definition ,is-value-option ',name)))))
 	   (match lst
-		 ,@(copy-tree *customs*)
-		 ,@(copy-tree *core-ops*)
+		 ,@(copy-tree *ops*)
+		 ,@(copy-tree *fundamentals*)
 		 ,@(copy-tree *functions*)
 		 ,@(copy-tree *iteraters*)
 		 ,@(copy-tree *conditions*)
+		 ,@(copy-tree *conditions2*)
 		 ,@(copy-tree *objects*)
-		 ,@(copy-tree *fundamentals*)
+		 ,@(copy-tree *customs*)
 		 ,@(copy-tree *miscellaneous*)))))
 
 (defmacro defmaca (name-or-name-and-options args &body body)
@@ -115,19 +109,30 @@
 	  `(defmaca-builder (,name-or-name-and-options) ,args ,body)
 	  `(defmaca-builder ,name-or-name-and-options ,args ,body)))
 
-(defmacro defmaca-builder ((name &key (return (gensym "return")) (environment (gensym "e"))) args body)
+(defmacro defmaca-builder ((name &key
+								 (return (gensym "return"))
+								 (environment (gensym "e"))
+								 (is-value nil)
+								 (inherit-return-value nil))
+						   args body)
   (declare (ignorable return))
-  (with-gensyms (definition)
+  (with-gensyms (definition is-value-option)
     `(progn
 	   (defun ,name (,environment ,return ,@args)
 		 (declare (ignorable ,return ,environment))
-		 (symbol-macrolet ((+cl+ (car ,environment))
-						   (+variables+ (closure-variables (car ,environment)))
-						   (+initializations+ (closure-initializations (car ,environment)))
-						   (+inline-lambda+ (closure-inline-lambda (car ,environment)))
-						   (+arguments+ (closure-arguments (car ,environment))))
-		   (let ((,definition (progn ,@body)))
-			 (m-compile ,environment ,definition))))
+		 (let ((+cl+ (car ,environment)))
+		   (with-slots ((+variables+ variables)
+						(+initializations+ initializations)
+						(+inline-lambda+ inline-lambda)
+						(+arguments+ arguments)) +cl+
+			 (multiple-value-bind (,definition
+								   ,is-value-option)
+				 (progn ,@body)
+			   (values (m-compile ,environment ,definition
+								  ,@(if inherit-return-value
+										`(:return ,return)
+										nil))
+					   ,(or is-value is-value-option))))))
 	   ,@(if *recompile-compiler*
 			 `((format t "recompiling m-compile ...")
 			   (recompile)
@@ -150,9 +155,11 @@
 				  (remove 'compiled (flatten value)))))
 
 (defmacro maca-compile (&body body)
-  (if (typep (car body) 'atom)
-	  `(m-compile (list (make-closure)) ',@body)
-	  `(m-compile (list (make-closure)) '(global (,@body)))))
+  `(progn 
+	(setf *indentation* 0)
+	,(if (typep (car body) 'atom)
+		`(m-compile (list (make-closure)) ',@body)
+		`(m-compile (list (make-closure)) '(global (,@body))))))
 
 (defmacro maca (&body script)
   `(maca-format (maca-compile ,@script)))

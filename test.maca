@@ -1,6 +1,12 @@
+;; (defpackage maca-test
+;;   (:use :common-lisp :cl-user :maca))
+;; (in-package :maca-test)
+
+(require 'macascript)
+(in-package :maca)
+(recompile)
 
 ;; fundamentals
-
 (maca (glue a 2 space "string"))
 (maca (paren a))
 (maca (paren (paren a)))			;reduces redundancy automatically
@@ -8,8 +14,9 @@
 (maca (comma (comma a b c) (comma a b c)))
 (maca (comma a b c))
 (maca (blk ((a b c))))
-(maca (blk (
-			(blk ((a b c))))))
+(maca (blk 
+	   ((blk 
+		 ((a b c))))))
 (maca (bracket a))
 
 ;; constants
@@ -58,9 +65,9 @@
 
 ;; global scope(bare)
 (maca (a b c)
-      (= d (- a b c))
-      (var e 2)
-      (+ a b c d e))
+	  (= d (- a b c))
+	  (var e 2)
+	  (+ a b c d e))
 
 ;; function definition
 ;; normal function: returns the final expression
@@ -71,40 +78,39 @@
 		  (+ a b c d e)))
 
 (maca (-> (a)
-	  (alert a)
-	  (-> (b)
-	      (if (< b 3)
-			  ((var a (- 3 b))
-			   (= b (expr a 5)))
-			  ((var a (- b 3))))
-	      (var c (+ a 3))
-	      (alert a b)
-	      a)))
-
+		  (alert a)
+		  (-> (b)
+			  (if (< b 3)
+				  ((var a (- 3 b))
+				   (= b (expr a 5)))
+				  ((var a (- b 3))))
+			  (var c (+ a 3))
+			  (alert a b)
+			  a)))
 
 ;; procedure function: returns undefined
 (maca (-/> (a b c)
-	   (var d (- a b c))
-	   (var e (+ a b c d))))
+		   (var d (- a b c))
+		   (var e (+ a b c d))))
 
 ;; inherit-this function: saves 'this' of the outer environment
-(maca (= @a 2)
-      (($ "button") > (click (=> (e) (alert (this > 2))))))
+(maca (a > (click (=/> (e) 
+					   (alert (this > 2))))))
 
 ;; inline function: they are directly expanded into the environment
 ;; this example is ok
 (maca (foo)
-      (bar foo)
-      (-/ baz (a b) (+ (some-operation a)
+	  (bar foo)
+	  (-/ baz (a b) (+ (some-operation a)
 					   (other-operation b)))
-      (= foo (baz foo bar)))
+	  (= foo (baz foo bar)))
 
 (maca (foo)
-      (bar foo)
-      (-/ baz (a b) (+ (some-operation a)
+	  (bar foo)
+	  (-/ baz (a b) (+ (some-operation a)
 					   (other-operation b)))
-      (= foo (baz foo bar))
-      (= bar (baz 1 (baz foo bar))))
+	  (= foo (baz foo bar))
+	  (= bar (baz 1 (baz foo bar))))
 
 ;; conditional expression
 
@@ -114,26 +120,20 @@
 		   ((if (> a b) a b)
 			> '(if (> c d) c d)
 			> content)))
-(maca (-> ()
-		  (a)
-		  ((if (> a b) a b)
-		   ;;> '(if (> c d) c d)
-		   > content)))
-(maca (-> ()
-		  (a)
-		  (content > (if (> a b) a b))))
 
-(maca (value (if (a b c) (- a b c))))
+;invalid accessor : you must quote the accessor key
+(maca (-> ()
+		  (content > (if (> a b) a b)))) 
 
 (maca (if (a b c)
-	  (= d (- a b c))))		;one-line
+		  (= d (- a b c))))		;one-line
 (maca (if (a b c)
-	  (= d (- a b c))
-	  (= d (- a b c))))		;one-line else
+		  (= d (- a b c))
+		  (= d (- a b c))))		;one-line else
 (maca (if (a b c)
-	  ((= d (- a b c))
-	   (= d (- a b c)))
-	  (= e (+ a b c d))))		;multi-line then
+		  ((= d (- a b c))
+		   (= d (- a b c)))
+		  (= e (+ a b c d))))		;multi-line then
 
 (maca (value (if (a b c)			;multi-line then/else
 				 ((= d (- a b c))
@@ -145,14 +145,17 @@
 
 ;; true if it's not undefined
 (maca (if? a b c))
-(maca (value (if? a b c)))
+
+(maca (a > (if? a b c))) 				;if? should be 
 
 ;; Literals
 
 ;; array literal
 (maca '(a (b c) (+ 1 2 3)))
+(maca '(a (if (b c) d e) (+ 1 2 3)))
+
 ;; object literal
-(maca (:a a :b (b c) :c (+ 1 2 3)))
+(maca (:a a :b (b c) :c (+ 1 2 3) :d (if (b c) d e)))
 
 ;; object accessor
 (maca (obj > attibute))
@@ -173,8 +176,8 @@
 
 
 (maca (obj > '(if (even n)
-				 (/ n 2)
-				 (+ (/ n 2) 1))))
+			   (/ n 2)
+			   (+ (/ n 2) 1))))
 
 
 (maca (obj > 2 > "key"))
@@ -195,272 +198,77 @@
 
 ;; try-catch-finally
 (maca (try ((drink 3 "beer")
-	    (eat 5 pizza))
-	   catch (x)
-	   ((if (== x "drunkTooMuch")
-		(puke)
-		(take digestive)))
-	   finally
-	   ((pay money)
-	    (go home))))
+			(eat 5 pizza))
+		   catch (x)
+		   ((if (== x "drunkTooMuch")
+				(puke)
+				(take digestive)))
+		   finally
+		   ((pay money)
+			(go home))))
 
 ;; iteration
-
 
 (maca (value (for elem in ary
 				  (alert elem)
 				  (alert elem))))
-(maca (value (for elem in ary
-				  (alert elem))))
-
-
 (maca (for elem in ary
-	   (alert elem)))
+		   (alert elem)))
 (maca (for elem i in ary
-	   (alert elem i)))
+		   (alert elem i)))
 
 (maca (for elem of obj
-	   (alert elem)))
+		   (alert elem)))
 (maca (for elem key of ary
-	   (alert elem i)))
+		   (alert elem i)))
 
 (maca (for own elem key of ary
-	   (alert elem i)))
+		   (alert elem i)))
 
 (maca (for own elem of ary
-	   (alert elem i)))
+		   (alert elem i)))
 
 (maca (for ((var i 0)
-	    (< i 10)
-	    (++ i))
-	(alert "hello!")
-	(alert i)))
+			(< i 10)
+			(++ i))
+		(alert "hello!")
+		(alert i)))
 
 ;; while and do-while
 
 ;; bad methodology
-(maca (while true
-	((alert "Let's do it tomorrow")
-	 (alert "Let's do it tomorrow"))))
+(maca (while (true)
+		((alert "Let's do it tomorrow")
+		 (alert "Let's do it tomorrow"))))
 
 ;; good methodology
 (maca (do 
-       ((alert "Let's do it now")
-	(alert "hush hush")
-	(alert "hush hush"))
-       while (not tired)))
-
-;; errors
-(maca (while true
-	(alert "Let's do it tomorrow")
-	(alert "Let's do it tomorrow")))
-(maca (do 
-       (alert "Let's do it now")
-       (alert "hush hush")
-	(alert "hush hush")
-       while (not tired)))
+	   ((alert "Let's do it now")
+		(alert "hush hush")
+		(alert "hush hush"))
+	   while (not tired)))
 
 ;; switch
+
 (maca (switch x
-	(case 1
-	  (alert x))			;1 case 1 statement
-	(case 2				;1 case 2 statements
-	  (alert 22)
-	  (alert 22))
-	(cases (3 4)			;2 cases 1 statements
-	       (alert x))
-	(cases ((sqrt 2)
-		(sqrt 3))	        ;2 cases 2 statements
-	       (alert x) 
-	       (alert x))
-	(default
-	    (alert "default")
-	    (alert "default")
-	  (alert "default"))))	;defaults
+		(case 1
+		  (alert x))))
+
+(maca (switch x
+		(case 1
+		  (alert x))			;1 case 1 statement
+		(case 2				;1 case 2 statements
+		  (alert 22)
+		  (alert 22))
+		(cases (3 4)			;2 cases 1 statements
+			   (alert x))
+		(cases ((sqrt 2)
+				(sqrt 3))	        ;2 cases 2 statements
+			   (alert x) 
+			   (alert x))
+		(default
+			(alert "default")
+			(alert "default")
+		  (alert "default"))))	;defaults
+;)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; 
-;; these script below are just a sketch which i wrote before the implementation.
-;; these are no more valid now.
-;; however, some ideas like 'set' are what i want to implement soon.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; # Assignment:
-;; number   = 42
-;; opposite = true
-
-;; done
-(= number 42)
-(= opposite true) 
-
-;; set has almost the same meaning as =,
-;; but it has the setf feature
-(set opposite on) 
-(set opposite yes)
-
-(eq true on yes t)						;-> t
-(eq false off no t)						;-> t
-
-
-;; CS	JS          MS
-;; is	===         eq
-;; isnt	!==         neq
-;; not	!           not
-;; and	&&          and
-;; or	||          or
-
-;; numerical operation
-
-;; >,<,>=,etc...
-
-
-;; true, yes, on	true
-;; false, no, off	false
-;; @,this	this
-;; of	in          has
-;; in	no JS equivalent
-
-;;      void 0      nil,undefined
-
-;; # Objects:
-;; math =
-;;   root:   Math.sqrt
-;;   square: square
-;;   cube:   (x) -> x * square x
-
-;; key-value store
-(:a 1 :b 2 :c 3)
-
-;; # Conditions:
-;; number = -42 if opposite
-
-(if opposite (= number -42))
-
-(= number -42 if opposite)			;in any last part of parenthesis
-
-;; # Functions:
-;; square = (x) -> x * x
-;; 
-;; same as cl. &rest, &key, &optional is available
-(= square (-> (x) (* x x)))
-
-;; # Arrays:
-;; list = [1, 2, 3, 4, 5]
-;; 
-;; no comma needed. its just a list
-(= lst (1 2 3 4 5))
-
-;; # Existence:
-;; alert "I knew it!" if elvis?
-
-(if (? elvis) (alert "I knew it"))
-
-;; chaining / object accessor
-;; 
-;; animal.human.eat(food).drink(coke)
-
-((animal > human > eat food) > drink coke)
-
-;; maca will not think the bracket as a comparison token, because
-;; it will never be at the first symbol of the list.
-
-
-;; Existential operator
-;; 
-;; animal.human?.eat?(food).drink(coke)
-((animal ? human ? eat food) > drink coke)
-
-
-;; prototype operator
-;; 
-;; String::dasherize
-
-(set (String :: dasherize) (-> (dosomething)))
-
-;; # Array comprehensions and for statements etc.
-;; cubes = (math.cube num for num in list)
-
-;; it returns a value if it should
-(for num in list
-     (math > cube num))
-
-
-;; destructuring-bind is almost the same as common-lisp but its 
-;; name "bind", not "destructuring-bind".
-;; 
-;; bind creates a closure.
-(bind (x y) (/ a b)
-      (dosomething))
-
-;; this does not create a closure. the argument should be quoted
-(set '(x y) (/ a b))
-
-;; setf feature is provided.
-;; it throws an error if the first argument does not return Object.
-
-(set setfary 
-     (setf->
-      (-> (ary x) (ary > x))	; return ary[x]
-      (-> (ary x)
-	  (-> (value)
-	      (set (ary > x) value)))))
-
-
-;; At last, of course, MACRO. 
-;; gensym is available.
-;; ONLY IN THE COMPILATION TIME does Maca turn out to be a lisp.
-
-(defmacro (valname &body body)
-    (let ((x (gensym)))
-      `(let ((,x 3))
-	 (print ,x)
-	 ,@body)))

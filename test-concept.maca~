@@ -1,0 +1,134 @@
+;; these script below are just a sketch before the implementation.
+;; these are no longer valid now.
+;; however, some ideas like 'set' are what i want to implement soon.
+
+;;   ;; # Assignment:
+;;   ;; number   = 42
+;;   ;; opposite = true
+
+;;   ;; done
+;;   (= number 42)
+;;   (= opposite true) 
+
+;;   ;; set has almost the same meaning as =,
+;;   ;; but it has the setf feature
+;;   (set opposite on) 
+;;   (set opposite yes)
+
+;;   (eq true on yes t)						;-> t
+;;   (eq false off no t)						;-> t
+
+
+;;   ;; CS	JS          MS
+;;   ;; is	===         eq
+;;   ;; isnt	!==         neq
+;;   ;; not	!           not
+;;   ;; and	&&          and
+;;   ;; or	||          or
+
+;;   ;; numerical operation
+
+;;   ;; >,<,>=,etc...
+
+
+;;   ;; true, yes, on	true
+;;   ;; false, no, off	false
+;;   ;; @,this	this
+;;   ;; of	in          has
+;;   ;; in	no JS equivalent
+
+;;   ;;      void 0      nil,undefined
+
+;;   ;; # Objects:
+;;   ;; math =
+;;   ;;   root:   Math.sqrt
+;;   ;;   square: square
+;;   ;;   cube:   (x) -> x * square x
+
+;;   ;; key-value store
+;;   (:a 1 :b 2 :c 3)
+
+;;   ;; # Conditions:
+;;   ;; number = -42 if opposite
+
+;;   (if opposite (= number -42))
+
+;;   (= number -42 if opposite)			;in any last part of parenthesis
+
+;;   ;; # Functions:
+;;   ;; square = (x) -> x * x
+;;   ;; 
+;;   ;; same as cl. &rest, &key, &optional is available
+;;   (= square (-> (x) (* x x)))
+
+;;   ;; # Arrays:
+;;   ;; list = [1, 2, 3, 4, 5]
+;;   ;; 
+;;   ;; no comma needed. its just a list
+;;   (= lst (1 2 3 4 5))
+
+;;   ;; # Existence:
+;;   ;; alert "I knew it!" if elvis?
+
+;;   (if (? elvis) (alert "I knew it"))
+
+;;   ;; chaining / object accessor
+;;   ;; 
+;;   ;; animal.human.eat(food).drink(coke)
+
+;;   ((animal > human > eat food) > drink coke)
+
+;;   ;; maca will not think the bracket as a comparison token, because
+;;   ;; it will never be at the first symbol of the list.
+
+
+;;   ;; Existential operator
+;;   ;; 
+;;   ;; animal.human?.eat?(food).drink(coke)
+;;   ((animal ? human ? eat food) > drink coke)
+
+
+;;   ;; prototype operator
+;;   ;; 
+;;   ;; String::dasherize
+
+;;   (set (String :: dasherize) (-> (dosomething)))
+
+;;   ;; # Array comprehensions and for statements etc.
+;;   ;; cubes = (math.cube num for num in list)
+
+;;   ;; it returns a value if it should
+;;   (for num in list
+;; 	   (math > cube num))
+
+
+;;   ;; destructuring-bind is almost the same as common-lisp but its 
+;;   ;; name "bind", not "destructuring-bind".
+;;   ;; 
+;;   ;; bind creates a closure.
+;;   (bind (x y) (/ a b)
+;; 		(dosomething))
+
+;;   ;; this does not create a closure. the argument should be quoted
+;;   (set '(x y) (/ a b))
+
+;;   ;; setf feature is provided.
+;;   ;; it throws an error if the first argument does not return Object.
+
+;;   (set setfary 
+;; 	   (setf->
+;; 		(-> (ary x) (ary > x))	; return ary[x]
+;; 		(-> (ary x)
+;; 			(-> (value)
+;; 				(set (ary > x) value)))))
+
+
+;;   ;; At last, of course, MACRO. 
+;;   ;; gensym is available.
+;;   ;; ONLY IN THE COMPILATION TIME does Maca turn out to be a lisp.
+
+;; (defmacro (valname &body body)
+;;     (let ((x (gensym)))
+;;       `(let ((,x 3))
+;; 	 (print ,x)
+;; 	 ,@body)))

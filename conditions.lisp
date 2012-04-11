@@ -4,56 +4,59 @@
 ;; conditional expression
 
 (defparameter *conditions*
-  '(((list '? cond then else)      (rewrite m-? t cond then else))
-	((list 'if cond then)          (rewrite m-if nil cond then))
-	((list 'if cond then else)     (rewrite m-if nil cond then else))
-	((list 'if? thing then)        (rewrite m-if-? t thing then))
-	((list 'if? thing then else)   (rewrite m-if-? t thing then else))
-	((list '?= to from)            (rewrite m-assign-if-exist t to from))
+  '(((list '? cond then else)      (rewrite m-? cond then else))
+	((list 'if cond then)          (rewrite m-if cond then))
+	((list 'if cond then else)     (rewrite m-if cond then else))
+	((list 'if? thing then)        (rewrite m-if-? thing then))
+	((list 'if? thing then else)   (rewrite m-if-? thing then else))
+	((list '?= to from)            (rewrite m-assign-if-exist to from))
 
-	((list* 'while (list cond) then)     (rewrite m-while nil cond then))
-	((list* 'while _)            (error "invalid while statement"))
-	((list 'do then 'while cond) (rewrite m-do-while nil cond then))
-	((list* 'do _)               (error "invalid do-while statement"))
+	((list* 'while (list cond) then)     (rewrite m-while cond then))
+	((list* 'while _)            (error "invalid while,syntax: (while (cond) then*)"))
+	((list 'do then 'while cond) (rewrite m-do-while cond then))
+	((list* 'do _)               (error "invalid do-while,syntax:(do body* while cond)"))
 
-	((list* 'with-label (list name) body) (rewrite m-label nil name body))
+	((list* 'with-label (list name) body) (rewrite m-label name body))
 	((list* 'with-label _) (error "invalid label name"))
 
-	((list* 'switch val conditions)	  (rewrite m-switch nil val conditions))
-	((list* 'case val body)	          (rewrite m-case nil val body))
-	((list* 'cases (list* vals) body) (rewrite m-cases nil vals body))
+	((list* 'switch val conditions)	  (rewrite m-switch val conditions))
+	((list* 'case val body)	          (rewrite m-case val body))
+	((list* 'cases (list* vals) body) (rewrite m-cases vals body))
 	((list* 'cases _ body)	          (error "invalid cases"))
-	((list* 'default body)	          (rewrite m-default nil body))
+	((list* 'default body)	          (rewrite m-default body))
       
 	((list 'try body 'catch (list error-var) error)
-	 (rewrite m-try nil body error-var error))
+	 (rewrite m-try body error-var error))
 	((list 'try body 'catch (list error-var) error 'finally fin)
-	 (rewrite m-try nil body error-var error fin))
+	 (rewrite m-try body error-var error fin))
 	((list* 'try body _)
 	 (error "invalid try-catch statement"))))
 
-(defmaca m-? (condition then &optional (else 'undefined))
+(defmaca (m-? :is-value t) (condition then &optional (else 'undefined))
   `(paren (glue (paren ,condition)
-				?
-				(paren ,then)
-				colon
-				(paren ,else))))
+				 ?
+				 (paren ,then)
+				 colon
+				 (paren ,else))))
 
-(defmaca m-if-? (thing then &optional else)
+(defmaca (m-if-? :is-value t) (thing then &optional else)
   `(if (and (!== ,thing null)
 			(!== (typeof ,thing) "undefined"))
 	   ,then
 	   ,else))
 
-(defmaca m-assign-if-exist (to from)
+(defmaca (m-assign-if-exist :is-value t) (to from)
   `(if? ,to (= ,to ,from)))
 
 (defmaca (m-if :environment env
 			   :return temp) (condition then &optional else)
   (if temp
-	  `(? ,condition
-		  (comma ,then)
-		  (comma ,else))
+	  `(if ,condition
+		   ,(1-or-2-line-set-temp then temp)
+		   ,(1-or-2-line-set-temp else temp))
+	  ;; (values `(? ,condition
+	  ;; 			  (comma ,then)
+	  ;; 			  (comma ,else)) t)
 	  (with-set-temp env (condition)
 		`(glue if (paren ,condition) (blk ,then)
 			   ,@(when else `(else (blk ,else)))))))
@@ -77,9 +80,10 @@
 
 (defmaca (m-label :environment env
 				  :return temp) (name body)
-  `(glue ,name colon (blk ,(if temp
-							   (1-or-2-line-set-temp body temp)
-							   body))))
+  `(glue ,name colon 
+		 (blk ,(if temp
+				   (1-or-2-line-set-temp body temp)
+				   body))))
 
 ;; todo: make it return a value
 (defmaca (m-switch :environment env
@@ -91,42 +95,53 @@
 				   conditions))
 	  (with-set-temp env (val)
 		`(glue switch (paren ,val)
-			   (blk ,conditions)))))
+			   (blk (glue ,@conditions))))))
 
 (defmaca (m-cases :environment env
 				  :return temp) (vals body)
-  `(glue ,@(reduce #'append 
-				   (mapcar #'(lambda (val)
-							   `((newline-and-indent) case space ,val colon))
-						   vals))
-		 (,@(if temp
-				(1-or-2-line-set-temp body temp)
-				body)
-			(break))))
+  (let ((body2 (1-or-2-line body)))
+	`(glue ,@(reduce #'append 
+					 (mapcar #'(lambda (val)
+								 `((newline-and-indent) case space ,val colon))
+							 vals))
+		   (blk (,@(if temp
+					   (1-or-2-line-set-temp body2 temp)
+					   body2)
+				   break)))))
 
 (defmaca (m-case :environment env
 				  :return temp) (val body)
-  `(glue case space ,val colon 
-		 (,@(if temp
-				(1-or-2-line-set-temp body temp)
-				body)
-			(break))))
+  (let ((body2 (1-or-2-line body)))
+	`(glue (newline-and-indent)
+		   case space ,val colon 
+		   (blk (,@(if temp
+					   (1-or-2-line-set-temp body2 temp)
+					   body2)
+				   break)))))
 
 (defmaca (m-default :environment env
 				  :return temp) (body)
-  `(glue default colon ,(if temp
-							(1-or-2-line-set-temp body temp)
-							body)))
+  (let ((body2 (1-or-2-line body)))
+	`(glue (newline-and-indent)
+		   default colon
+		   (blk (,@(if temp
+					   (1-or-2-line-set-temp body2 temp)
+					   body2)
+				   break)))))
 
 
 ;; -----------------------------
 ;; try/catch expression
 
 (defmaca (m-try :environment env
-				:return temp) (body error-var error &optional finally)
+				:return temp) 
+	(body error-var error &optional finally)
   `(glue try
 		 (blk ,(if temp (1-or-2-line-set-temp body temp) body))
 		 catch (paren ,error-var)
 		 (blk ,(if temp (1-or-2-line-set-temp error temp) error))
 		 ,@(when finally
-				 `(finally (blk ,(if temp (1-or-2-line-set-temp finally temp) finally))))))
+				 `(finally (blk 
+							,(if temp
+								 (1-or-2-line-set-temp finally temp)
+								 finally))))))

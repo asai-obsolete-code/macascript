@@ -1,0 +1,90 @@
+
+
+(require 'macascript)
+(in-package :maca)
+(recompile)
+
+
+;; unless
+(maca (unless a b))
+
+;; reversed inf and unless
+
+(maca ((a b) if b))
+(maca (a unless b))
+
+
+
+;; CPS conversion (experimental)
+
+;; original lisp version
+(defun &+ (v1 v2 cont)
+  (funcall cont (+ v1 v2)))
+(defun &* (v1 v2 cont)
+  (funcall cont (* v1 v2)))
+(block out
+  (&+ 1 2 (lambda (k)
+			(&* k 3 (lambda (l)
+					  (return-from out l))))))
+
+;; concept of call-cc
+
+(maca ((alert
+		(with-cc (cont)
+		  ($ > (get "http://google.com"
+					(-/> (xhr) (cont (xhr > responce-text)))))))))
+
+(alert (with-cc (cont1) (cont1 1))
+	   (with-cc (cont2) (cont2 2))
+	   3)
+
+(function(cont1){
+		 return cont1(1);
+})
+(
+ (function(cont2){
+		 return cont2(2);
+ })
+ (function(value2){
+   return (function(value1){
+     alert(value1+" "+value2+" "+3);
+   });
+ })
+)
+
+
+(alert (with-cc (cont) (cont 1))
+	   (with-cc (cont) (cont 2))
+	   (with-cc (cont) (cont 3)))
+
+
+
+
+(var cc (-> (cont) ,@body))
+(cc (-> (value) (alert value)))
+
+(maca ((var cc)
+	   (alert
+		(with-cc (cont)
+		  (= cc cont) 
+		  (cont "hello")))
+	   (cc "hello again!")))
+
+;; concept of cps conversion
+
+(maca (with-cps-conversion
+		  (* (+ 1 2) 3)))
+
+;; output >> 
+(maca ((-/> ()
+		   (try 
+			((var &+ (-/> (v1 v2 cont) (cont (+ v1 v2))))
+			 (var &* (-/> (v1 v2 cont) (cont (* v1 v2))))
+			 (var cps-return (-/> (result) (throw result)))
+			 (&+ 1 2 (-/> (k)
+						  (&* k 3 cps-return))))
+			catch (c) ((return c))))))
+
+(maca (with-cps-conversion
+		  (* 1 2 3 (with-cc (c)			;c should be 6
+					 ))))

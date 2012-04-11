@@ -1,0 +1,17 @@
+
+(in-package :maca)
+(defparameter *customs*
+  '(;;
+	((list* 'with-cc (list cc) body) (rewrite m-with-cc cc body))
+	))
+
+(defmaca (m-with-cc :is-value t) (cc body)
+  ;;(break "cc-name:~a~%body:~a" cc body)
+  `((paren (-/> ()
+				(try
+				 ((var ,cc (-/> (value) (throw value))))
+				 catch (x)
+				 ((return x)))
+				,@body
+				)) > (call this)))
+
