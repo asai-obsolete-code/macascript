@@ -71,7 +71,7 @@
 		 do (setf body (subst temp param body))
 		 do (push temp (closure-variables found-cl))
 		 do (push `(= ,temp ,arg) copying-script))
-	  (break "~a" return-as)
+	  ;;(break "~a" return-as)
 	  (if return-as 
 		  `(,@copying-script
 			,@(1-or-2-line-set-temp body return-as))

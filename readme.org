@@ -63,17 +63,20 @@ Have fun extending js syntax!
   + cl-match
   + alexandria
   + anaphora : I don't use it so much, but it's sometimes useful.
+  + cl-ppcre
 
 ** run
-the code is just experimental yet.
+Macascript is just an experimental code.
 so open the REPL in the repository and input these code to the interpreter: 
 
 + if your implementation supports 'require:
   + (require 'macascript)
   + (in-package :maca)
+  + (recompile)
 + or else:
   + (asdf:operate 'asdf:load-op 'macascript)
   + (in-package :maca)
+  + (recompile)
 
 * Examples
 ** Fundamentals
@@ -154,31 +157,40 @@ return(a);
 
 #+BEGIN_SRC js
 function(){
-var tmp1226,tmp1227;
-;
-foo = (tmp1227 = bar,tmp1226 = foo,(some-operation(tmp1226)+other-operation(tmp1227)));
-function(b){
-var a,t1228,f1229;
-t1228 = this;
-f1229 = function(e){
-return(alert(t1228[2]));
+	var tmp1443,tmp1444,tmp24;
+	;
+	
+	tmp1444 = bar;
+	tmp1443 = foo;
+	tmp24 = (someOperation(tmp1443) + otherOperation(tmp1444));foo = tmp24;
+	function(b){
+		var a,t1452,f1453;
+		t1452 = this;
+		f1453 = function(e){
+			return alert(t1452[2]);
+		};
+		if((b<3)){a = (3 NIL b)
+		}else{a = (b NIL 3)
+		};
+		this.a = 2;
+		$("button").click(f1453);
+	};
 };
-if((b<3)){
-a = (3-b)}else{
-a = (b-3)}this.a = 2;
-$("button").click(f1229);
-};
-}
 #+END_SRC
 
 ** other supported syntaxes
 
-+ Try-Catch-Finally
-+ Iteration (which returns values)
++ Try-Catch-Finally.
++ Iteration. It automatically collects the value of implicit return,
+  but it won't do it when it's not needed.
 + while, do-while (which returns a value)
-+ switch
++ switch, with multiple cases
 
 ** Using defmaca to define a new syntax
+
+Because macascript inherited the power of Macro from Common Lisp,
+macascript has its own syntax ``defmaca'' which defines a new macascript
+syntax.
 
 #+BEGIN_SRC lisp
 (defmaca my-if (condition then &optional else)
@@ -186,14 +198,43 @@ $("button").click(f1229);
        ,then
        ,else))
 
-;; if you really want to use my-if you have to 
-;; add the pattern to m-compile. this will be
-;; soon improved so that defmaca takes another argument for the
-;; matching pattern and automatically add it to the list of 
-;; available patterns which cl-match uses.
-
 (maca (-> (a) (my-if a true false)))
 
+#+END_SRC
+
+If you really want to use the example above, you have to 
+add the syntax pattern to the appropriate parameter. This will be
+soon improved so that DEFMACA takes another argument for the
+matching pattern and automatically add it to the list.
+
+See the another example below. I've implemented call/cc!
+
+#+BEGIN_SRC lisp
+(maca ((console > log
+ (with-cc (cont1) (cont1 (confirm "one")))
+ (with-cc (cont2) (cont2 (confirm "two")))
+ 5
+ (with-cc (cont3) (cont3 (confirm "three")))
+ 4)))
+#+END_SRC
+
+#+BEGIN_SRC js
+var arg1477;
+
+console.log.apply(this,arg1477 = (function(cont1){
+	cont1(confirm("one"));
+})((function(cont2){
+	cont2(confirm("two"));
+})((function(cont3){
+	cont3(confirm("three"));
+})(function(valueArg1461){
+	return function(valueArg1458){
+		return function(valueArg1455){
+			var tmp121;
+			return tmp121 = [valueArg1455,valueArg1458,5,valueArg1461,4];
+		};
+	};
+})))());;
 #+END_SRC
 
 see test.maca for more examples.
