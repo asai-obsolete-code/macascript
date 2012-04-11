@@ -19,5 +19,4 @@
 
 
 (defmaca (m-with-cc :environment env :is-value t) (cc body)
-  (push (closure-temp-continuation +cl+)
-		`(-> (,cc) ,@body)))
+  `(-/> (,cc) ,@body))

@@ -34,31 +34,11 @@
 		  ($ > (get "http://google.com"
 					(-/> (xhr) (cont (xhr > responce-text)))))))))
 
-(alert (with-cc (cont1) (cont1 1))
-	   (with-cc (cont2) (cont2 2))
-	   3)
-
-(function(cont1){
-		 return cont1(1);
-})
-(
- (function(cont2){
-		 return cont2(2);
- })
- (function(value2){
-   return (function(value1){
-     alert(value1+" "+value2+" "+3);
-   });
- })
-)
-
-
-(alert (with-cc (cont) (cont 1))
-	   (with-cc (cont) (cont 2))
-	   (with-cc (cont) (cont 3)))
-
-
-
+(maca ((console > log (with-cc (cont1) (cont1 (confirm "one")))
+				(with-cc (cont2) (cont2 (confirm "two")))
+				5
+				(with-cc (cont3) (cont3 (confirm "three")))
+				4)))
 
 (var cc (-> (cont) ,@body))
 (cc (-> (value) (alert value)))

@@ -5,7 +5,7 @@
     :version "0.2"
     :author "Masataro Asai <guicho2.71828@gmail.com>"
     :licence "Public Domain"
-	:depends-on (:cl-match :alexandria :anaphora)
+	:depends-on (:cl-match :alexandria :anaphora :cl-ppcre)
 	:components ((:file "core")
 				 (:file "utilities")
 				 (:file "fundamentals")

@@ -29,22 +29,29 @@
 
 
 (defmaca (m-function-call :environment env :is-value t) (op args)
-  ;; (if (some #'(lambda (arg) (eq (car arg) 'with-cc)))
-  ;; 	  (let ((actual-args 
-  ;; 			 (mapcar
-  ;; 			  #'(lambda (arg)
-  ;; 				  (if (eq (car arg) 'with-cc)
-  ;; 					  (with-gensyms (value-arg)
-  ;; 						(m-compile env arg)
-  ;; 						value-arg)
-  ;; 					  arg)) args)))
-  ;; 		(with-set-temps-in-list (env actual-args temps)
-  ;; 		  `(glue ,op (paren (comma ,@temps))))
-
-	  ;; uses continuation-passing-style
-	  
-	  (with-set-temps-in-list (env args temps)
-		`(glue ,op (paren (comma ,@temps))))))
+  (let (handlers actual-args value-args)
+	(loop for arg in args do
+		 (if (and (typep arg 'list)
+				  (eq (car arg) 'with-cc))
+			 (with-gensyms (value-arg)
+			   (push (m-compile env arg) handlers)
+			   (push value-arg actual-args)
+			   (push value-arg value-args))
+			 (push arg actual-args)))
+	(if handlers
+		(let ((result (with-set-temps-in-list 
+						  (env (reverse actual-args) temps)
+						`'(,@temps))))
+		  (loop for arg in (reverse value-args) do
+			   (setf result `(-> (,arg) ,result)))
+		  (loop for handler in handlers do
+			   (setf result 
+					 `(glue
+					   (paren ,handler)
+					   (paren ,result))))
+		  `(glue (,op > (apply this (glue ,result (paren nil))))))
+		(with-set-temps-in-list (env args temps)
+		  `(glue ,op (paren (comma ,@temps)))))))
 
 
 

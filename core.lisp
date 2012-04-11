@@ -1,6 +1,6 @@
 
 (defpackage maca
-  (:use :common-lisp :cl-user :alexandria :cl-match :anaphora)
+  (:use :common-lisp :cl-user :alexandria :cl-match :anaphora :cl-ppcre)
   ;;(:export 'maca 'm-compile 'maca-compile 'maca-format)
   )
 
@@ -145,12 +145,21 @@
 					  (let ((token (or (cdr (assoc arg *aliases*)) arg)))
 						(typecase token
 						  (null "")
-						  (symbol (let ((str (symbol-name token)))
-									(if (every #'(lambda (c) (or (not (both-case-p c))
-																 (upper-case-p c)))
-											   str)
-										(string-downcase str)
-										str)))
+						  (symbol
+						   (let ((str (symbol-name token)))
+							 (let ((chunks
+									(split "-"
+										   (if (every
+												#'(lambda (c)
+													(or (not (both-case-p c))
+														(upper-case-p c)))
+												str)
+											   (string-downcase str)
+											   str))))
+							   (format nil "~a~{~a~}"
+									   (car chunks)
+									   (mapcar #'string-capitalize
+											   (cdr chunks))))))
 						  (t token))))
 				  (remove 'compiled (flatten value)))))
 
