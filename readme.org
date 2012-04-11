@@ -5,6 +5,22 @@ by parenscript and coffeescript.
 
 I wasn't satisfied with either of them, so I made one myself.
 
+Macascript supports :
++ Conditional statements which returns a value
++ Postfix if/unless
++ Iteration with automatically collecting results if necessary
++ Implicit return
++ Call/cc
++ Lisp Macro
++ etc...
+
+Because macascript is aimed to be in accordance with Lisp and Macro,
+extending its syntax is far more easier than the other languages.
+Some functionality like &rest or &optional arguments (which are already
+suppoerted in coffeescript) are soon to be implemented.
+
+* Motivation
+
 The motivation is that Parenscript doesn't seem to fit the need of
 javascript programmers. It is rather a utility for the lisp
 programmers who dynamically produces javascript code on the server
@@ -51,7 +67,6 @@ easy and fun to use.
 Have fun extending js syntax!
 
 * How to try
-
 ** recommended software
 + [[http://www.sbcl.org/][sbcl]] : The only lisp implimentation I've tested.
 + [[http://www.quicklisp.org/][quicklisp]] : great software.
@@ -110,31 +125,35 @@ so open the REPL in the repository and input these code to the interpreter:
 
 #+BEGIN_SRC js
 function(a){
-var d,e,f,g,temp1248,temp1249;
-if(a(b,c)){
-d = (a-(b-c))e = (a==b)&&(b==c)&&(c==d)}else{
-f = [a,b(c),(1+(2+3))];
-g = {
-c:(1+(2+3)),b:b(c),a:a}}if(((a!==undefined)&&((typeof a)!=="undefined"))){
-b}else{
-c};
-granpa.parent.obj.child(2).grandchild(3,4,5);
-obj[2]["key"][key][key];
-obj.prototype.child.grandchild;
-obj.prototype.method(a);
-obj.prototype;
-(((g1246 = a.b)!=undefined))?((((g1247 = g1246.c)!=undefined))?(g1247):((void 0))):((void 0));
-((if(a){
-temp1248 = b;
-}else{
-temp1248 = c;
-},temp1248)[(if(d){
-temp1249 = e;
-}else{
-temp1249 = f;
-},temp1249)]||(x(a)&&x(b)));
-return(a);
-}
+	var d,e,f,g,tmp203,tmp204;
+	if(a(b,c)){
+		d = (a NIL (b NIL c));
+		e = (a==b)&&(b==c)&&(c==d);
+	}else{
+		f = [a,b(c),(1 + (2 + 3))];
+		g = {a:a,b:b(c),c:(1 + (2 + 3))
+		};
+	};
+	if(((a!==undefined) && ((typeof a)!=="undefined"))){b
+	}else{c
+	};
+	granpa.parent.obj.child(2).grandchild(3,4,5);
+	obj[2]["key"][key][key];
+	obj.prototype.child.grandchild;
+	obj.prototype.method(a);
+	obj.prototype;
+	((((g1500 = a.b)!=undefined))?(((((g1501 = g1500.c)!=undefined))?(g1501):((void 0)))):((void 0)));
+	(if(a){
+		tmp203 = b;
+	}else{
+		tmp203 = c;
+	}if(d){
+		tmp204 = e;
+	}else{
+		tmp204 = f;
+	}tmp203[tmp204] || (x(a) && x(b)));
+	return a;
+};
 #+END_SRC
 
 ** Procedure/Inline/Inherit-this function
@@ -177,6 +196,34 @@ function(){
 	};
 };
 #+END_SRC
+** Call/cc
+
+#+BEGIN_SRC lisp
+(maca ((console > log
+ (with-cc (cont1) (cont1 (confirm "one")))
+ (with-cc (cont2) (cont2 (confirm "two")))
+ 5
+ (with-cc (cont3) (cont3 (confirm "three")))
+ 4)))
+#+END_SRC
+
+#+BEGIN_SRC js
+var arg1477;
+console.log.apply(this,arg1477 = (function(cont1){
+	cont1(confirm("one"));
+})((function(cont2){
+	cont2(confirm("two"));
+})((function(cont3){
+	cont3(confirm("three"));
+})(function(valueArg1461){
+	return function(valueArg1458){
+		return function(valueArg1455){
+			var tmp121;
+			return tmp121 = [valueArg1455,valueArg1458,5,valueArg1461,4];
+		};
+	};
+})))());;
+#+END_SRC
 
 ** other supported syntaxes
 
@@ -206,36 +253,6 @@ If you really want to use the example above, you have to
 add the syntax pattern to the appropriate parameter. This will be
 soon improved so that DEFMACA takes another argument for the
 matching pattern and automatically add it to the list.
-
-See the another example below. I've implemented call/cc!
-
-#+BEGIN_SRC lisp
-(maca ((console > log
- (with-cc (cont1) (cont1 (confirm "one")))
- (with-cc (cont2) (cont2 (confirm "two")))
- 5
- (with-cc (cont3) (cont3 (confirm "three")))
- 4)))
-#+END_SRC
-
-#+BEGIN_SRC js
-var arg1477;
-
-console.log.apply(this,arg1477 = (function(cont1){
-	cont1(confirm("one"));
-})((function(cont2){
-	cont2(confirm("two"));
-})((function(cont3){
-	cont3(confirm("three"));
-})(function(valueArg1461){
-	return function(valueArg1458){
-		return function(valueArg1455){
-			var tmp121;
-			return tmp121 = [valueArg1455,valueArg1458,5,valueArg1461,4];
-		};
-	};
-})))());;
-#+END_SRC
 
 see test.maca for more examples.
 
