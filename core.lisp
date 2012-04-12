@@ -84,7 +84,8 @@
   (arguments nil)
   (variables nil)
   (initializations nil)
-  (inline-lambda nil))
+  (inline-lambda nil)
+  (function-lambda nil))
 
 (defmacro recompile ()
   `(defun m-compile (env lst &key return)

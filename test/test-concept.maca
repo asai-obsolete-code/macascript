@@ -10,60 +10,6 @@
 ;;   (eq true on yes t)						;-> t
 ;;   (eq false off no t)						;-> t
 
-;;   ;; # Conditions:
-;;   ;; number = -42 if opposite
-
-;;   (if opposite (= number -42))
-
-;;   (= number -42 if opposite)			;in any last part of parenthesis
-
-;;   ;; # Functions:
-;;   ;; square = (x) -> x * x
-;;   ;; 
-;;   ;; same as cl. &rest, &key, &optional is available
-;;   (= square (-> (x) (* x x)))
-
-;;   ;; # Arrays:
-;;   ;; list = [1, 2, 3, 4, 5]
-;;   ;; 
-;;   ;; no comma needed. its just a list
-;;   (= lst (1 2 3 4 5))
-
-;;   ;; # Existence:
-;;   ;; alert "I knew it!" if elvis?
-
-;;   (if (? elvis) (alert "I knew it"))
-
-;;   ;; chaining / object accessor
-;;   ;; 
-;;   ;; animal.human.eat(food).drink(coke)
-
-;;   ((animal > human > eat food) > drink coke)
-
-;;   ;; maca will not think the bracket as a comparison token, because
-;;   ;; it will never be at the first symbol of the list.
-
-
-;;   ;; Existential operator
-;;   ;; 
-;;   ;; animal.human?.eat?(food).drink(coke)
-;;   ((animal ? human ? eat food) > drink coke)
-
-
-;;   ;; prototype operator
-;;   ;; 
-;;   ;; String::dasherize
-
-;;   (set (String :: dasherize) (-> (dosomething)))
-
-;;   ;; # Array comprehensions and for statements etc.
-;;   ;; cubes = (math.cube num for num in list)
-
-;;   ;; it returns a value if it should
-;;   (for num in list
-;; 	   (math > cube num))
-
-
 ;;   ;; destructuring-bind is almost the same as common-lisp but its 
 ;;   ;; name "bind", not "destructuring-bind".
 ;;   ;; 
@@ -74,7 +20,7 @@
 ;;   ;; this does not create a closure. the argument should be quoted
 ;;   (set '(x y) (/ a b))
 
-;;   ;; setf feature is provided.
+;;   ;; maca provides the setf feature.
 ;;   ;; it throws an error if the first argument does not return Object.
 
 ;;   (set setfary 
@@ -85,12 +31,22 @@
 ;; 				(set (ary > x) value)))))
 
 
-;;   ;; At last, of course, MACRO. 
-;;   ;; gensym is available.
-;;   ;; ONLY IN THE COMPILATION TIME does Maca turn out to be a lisp.
+;; extended lambda-list in the function definition
 
-;; (defmacro (valname &body body)
-;;     (let ((x (gensym)))
-;;       `(let ((,x 3))
-;; 	 (print ,x)
-;; 	 ,@body)))
+;; in javascript, every function can take insufficient arguments 
+;; and also superfluous arguments (via `arguments' special variable).
+;; therefore, macascript doesn't support &optional argument
+;; while it supports &rest and &key.
+;; 
+
+(maca ((var fn1 (-> (a (b 2) (c 3) &rest others)
+					definitions...))
+	   (var fn2 (-> (a &key b (c nil) (d nil d-supplied-p))
+					...))
+	   (fn1 1 2 3 4 5 6)
+	   (fn1 1 2)
+	   (fn1)
+	   (fn2 1 :b 2 :c 3)))
+
+;; the implementation of &key arguments does NOT use the object literal
+;; to pass those arguments, because of the cost of making those literals.

@@ -5,6 +5,10 @@
 
 (defparameter *functions*
   '(((list 'global sentences)          (rewrite m-global sentences))
+	((list* 'function name
+	  (list* (as type (or '-> '-/>)) (list* args) body))
+	 (rewrite m-function-declaration name type args body))
+	((list* '-> (list* args) body)      (rewrite m-function args body))
 	((list* '-> (list* args) body)      (rewrite m-function args body))
 	((list* '=> (list* args) body)      (rewrite m-inherit-this-function args body))
 	((list* '-/> (list* args) body)     (rewrite m-procedure-function args body))
@@ -78,7 +82,16 @@
      fn `(-/> ,args ,@(subst this 'this body)))
     fn))
 
+
+;; ----------------------------------------------------------------
+;; m-function-declaration and m-inline-function pushes the definition
+;;  and lambda list to the slot of the current closure.
+;; It will be used in the compilation to produce a compile-time error.
+
 (defmaca m-inline-function (name args body)
   (setf (getf +inline-lambda+ name) (cons args body))
   nil)
-  
+
+(defmaca m-function-declaration (name type args body)
+  (setf (getf +function-lambda+ name) (list type args body))
+  `(var ,name (,type ,args ,@body)))
