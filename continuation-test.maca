@@ -18,14 +18,14 @@
 ;; CPS conversion (experimental)
 
 ;; original lisp version
-(defun &+ (v1 v2 cont)
-  (funcall cont (+ v1 v2)))
-(defun &* (v1 v2 cont)
-  (funcall cont (* v1 v2)))
-(block out
-  (&+ 1 2 (lambda (k)
-			(&* k 3 (lambda (l)
-					  (return-from out l))))))
+;; (defun &+ (v1 v2 cont)
+;;   (funcall cont (+ v1 v2)))
+;; (defun &* (v1 v2 cont)
+;;   (funcall cont (* v1 v2)))
+;; (block out
+;;   (&+ 1 2 (lambda (k)
+;; 			(&* k 3 (lambda (l)
+;; 					  (return-from out l))))))
 
 ;; concept of call-cc
 
@@ -55,31 +55,9 @@
 	   (cc1 "three-again") (// "this will call alert")
 	   ))
 
-(var cc (-> (cont) ,@body))
-(cc (-> (value) (alert value)))
-
 (maca ((var cc)
 	   (alert
 		(with-cc (cont)
 		  (= cc cont) 
 		  (cont "hello")))
 	   (cc "hello again!")))
-
-;; concept of cps conversion
-
-(maca (with-cps-conversion
-		  (* (+ 1 2) 3)))
-
-;; output >> 
-(maca ((-/> ()
-		   (try 
-			((var &+ (-/> (v1 v2 cont) (cont (+ v1 v2))))
-			 (var &* (-/> (v1 v2 cont) (cont (* v1 v2))))
-			 (var cps-return (-/> (result) (throw result)))
-			 (&+ 1 2 (-/> (k)
-						  (&* k 3 cps-return))))
-			catch (c) ((return c))))))
-
-(maca (with-cps-conversion
-		  (* 1 2 3 (with-cc (c)			;c should be 6
-					 ))))

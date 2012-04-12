@@ -1,7 +1,0 @@
-
-
-(defparameter *conditions2*
-  '(									;
-	((list then 'if cond)          (rewrite m-if cond then))
-	((list then 'unless cond)      (rewrite m-if cond then))
-	((list 'unless cond then)      (rewrite m-if cond then))))
