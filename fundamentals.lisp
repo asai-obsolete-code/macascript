@@ -9,6 +9,7 @@
   '(((list* 'compiled clauses)          (values lst t 'compiled))
 	((list* 'glue clauses)              (rewrite m-glue clauses))
 	((list 'paren clause)               (rewrite m-paren clause))
+	((list 'stringify clause)           (rewrite m-stringify clause))
 	((list 'bracket clause)             (rewrite m-bracket clause))
 	((list* 'comma clauses)             (rewrite m-comma clauses))
 	((list 'blk clause)                 (rewrite m-block clause))
@@ -34,6 +35,9 @@
 
 (defmaca (m-paren :is-value t) (arg)
   `(glue lparen ,arg rparen))
+
+(defmaca (m-stringify :is-value t) (arg)
+  `(glue quote ,arg quote))
 
 (defmaca (m-bracket :is-value t) (arg)
   `(glue lbracket ,arg rbracket))

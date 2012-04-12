@@ -24,7 +24,7 @@
 (defparameter *assignments*
   '(= += -= *= /= <<= >>= >>>= &= ^= |\|=| and= or= not=))
 
-(defmaca (m-assignments :environment env) (op to from)
+(defmaca (m-assignments :environment env :is-value t) (op to from)
   (with-set-temp env (from)
 	`(glue ,to space ,op space ,from)))
 

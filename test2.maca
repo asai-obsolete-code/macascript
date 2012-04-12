@@ -29,16 +29,31 @@
 
 ;; concept of call-cc
 
+(maca (stringify a))
+
 (maca ((alert
 		(with-cc (cont)
 		  ($ > (get "http://google.com"
 					(-/> (xhr) (cont (xhr > responce-text)))))))))
 
-(maca ((console > log (with-cc (cont1) (cont1 (confirm "one")))
-				(with-cc (cont2) (cont2 (confirm "two")))
-				5
-				(with-cc (cont3) (cont3 (confirm "three")))
-				4)))
+(maca ((var cc1)
+	   (var cc2)
+	   (var cc3)
+	   (console > log (with-cc (cont1) 
+			  (= cc1 cont1)
+			  (cont1 (confirm "one")))
+			(with-cc (cont2)
+			  (= cc2 cont2)
+			  (cont2 (confirm "two")))
+			5
+			(with-cc (cont3)
+			  (= cc3 cont3)
+			  (cont3 (confirm "three")))
+			4)
+	   (cc1 "one-again") (// "this will call cont2 and cont3 again")
+	   (cc1 "two-again") (// "this will call cont3 again")
+	   (cc1 "three-again") (// "this will call alert")
+	   ))
 
 (var cc (-> (cont) ,@body))
 (cc (-> (value) (alert value)))

@@ -26,7 +26,15 @@
 	((list) (values nil t 'null))
 	((list* sentences) (rewrite m-sentences sentences))))
 
+;; this is currently necessary for with-cc operation
+;;   (this will be fixed in the future improvement)
 
+(maca (= (|Object| >> call-lambda)
+		 (-> (fn)
+			 (fn > call this)))
+	  (var call-lambda
+		 (-> (fn)
+			 (fn > call this))))
 
 (defmaca (m-function-call :environment env :is-value t) (op args)
   (let (handlers actual-args value-args)
@@ -39,23 +47,23 @@
 			   (push value-arg value-args))
 			 (push arg actual-args)))
 	(if handlers
-		(let ((result (with-set-temps-in-list 
-						  (env (reverse actual-args) temps)
-						`'(,@temps))))
+		(let ((result 
+			   (with-set-temps-in-list 
+				   (env (reverse actual-args) temps)
+				 `(-> ()
+					  (glue
+					   (or (this > ,op) ,op)
+					   (paren (comma ,@temps)))))))
 		  (loop for arg in (reverse value-args) do
 			   (setf result `(-> (,arg) ,result)))
 		  (loop for handler in handlers do
 			   (setf result 
-					 `(glue
+					 `(paren (glue
 					   (paren ,handler)
-					   (paren ,result))))
-		  `(glue (,op > (apply this (glue ,result (paren nil))))))
+					   (paren ,result)))))
+		  `(call-lambda ,result))
 		(with-set-temps-in-list (env args temps)
 		  `(glue ,op (paren (comma ,@temps)))))))
-
-
-
-
 
 
 (defmaca (m-inline-function-call :environment env :return return-as)
@@ -86,8 +94,10 @@
 ;;   `(glue (newline-and-indent) ,sent))
 (defmaca m-sentences (sents)
   `(glue ,@(mapcar
-			#'(lambda (sent) 
-				`(glue (newline-and-indent) ,sent semicolon))
+			#'(lambda (sent)
+				(if (eq (car sent) 'var)
+					sent
+					`(glue (newline-and-indent) ,sent semicolon)))
 			sents)))
   ;; `(glue ,@sents))
 

@@ -43,6 +43,7 @@
     (period . #\.)
     (semicolon . #\;)
     (comma . #\,)
+    (quote . #\')
     (lbrace . #\{)
     (rbrace . #\})
     (lbracket . #\[)
