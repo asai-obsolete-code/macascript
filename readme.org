@@ -1,3 +1,11 @@
+
+#+TITLE: Yet another Javascript compiler Macascript
+#+AUTHOR: 浅井　政太郎 (Masataro Asai from Univ. of Tokyo)
+#+LANGUAGE: ja
+#+EMAIL: guicho2.71828@gmail.com
+#+STYLE: <link rel="stylesheet" type="text/css" href="readme.css" />
+#+INFOJS_OPT: view:info toc:t
+
 * Yet another Javascript compiler Macascript
 
 Macascript is a simple javascript compiler which is inspired
@@ -160,14 +168,28 @@ function(){
 
 #+BEGIN_SRC lisp
 (maca ((alert
-	(with-cc (cont)
-	  ($ > (get "http://google.com"
-		(-/> (xhr) (cont (xhr > responce-text)))))))))
-(maca ((console > log
- (with-cc (cont1) (cont1 (confirm "one")))
- (with-cc (cont2) (cont2 (confirm "two")))
- 5
- (with-cc (cont3) (cont3 (confirm "three"))))))
+		(with-cc (cont)
+		  ($ > (get "http://google.com"
+					(-/> (xhr) (cont (xhr > responce-text)))))))))
+
+(maca ((var cc1)
+	   (var cc2)
+	   (var cc3)
+	   (console > log (with-cc (cont1) 
+			  (= cc1 cont1)
+			  (cont1 (confirm "one")))
+			(with-cc (cont2)
+			  (= cc2 cont2)
+			  (cont2 (confirm "two")))
+			5
+			(with-cc (cont3)
+			  (= cc3 cont3)
+			  (cont3 (confirm "three")))
+			4)
+	   (cc1 "one-again") (// "this will call cont2 and cont3 again")
+	   (cc1 "two-again") (// "this will call cont3 again")
+	   (cc1 "three-again") (// "this will call alert")
+	   ))
 #+END_SRC
 
 #+BEGIN_SRC js
@@ -181,32 +203,45 @@ callLambda(((function(cont){
 	$.get("http://google.com",function(xhr){
 		cont(xhr.responceText);
 	});
-})(function(valueArg1599){
+})(function(valueArg951){
 	var tmp121;
 	return tmp121 = function(){
 		var tmp121;
-		return tmp121 = (this.alert || alert)(valueArg1599);
+		return tmp121 = (this.alert || alert)(valueArg951);
 	};
 })));;
 
+var cc1,cc2,cc3;
 
 console.callLambda(((function(cont1){
+	cc1 = cont1;
 	cont1(confirm("one"));
 })(((function(cont2){
+	cc2 = cont2;
 	cont2(confirm("two"));
 })(((function(cont3){
+	cc3 = cont3;
 	cont3(confirm("three"));
-})(function(valueArg1590){
-	return function(valueArg1587){
-		return function(valueArg1584){
+})(function(valueArg966){
+	return function(valueArg963){
+		return function(valueArg960){
 			var tmp121;
 			return tmp121 = function(){
 				var tmp121;
-				return tmp121 = (this.log || log)(valueArg1584,valueArg1587,5,valueArg1590);
+				return tmp121 = (this.log || log)(valueArg960,valueArg963,5,valueArg966,4);
 			};
 		};
 	};
-})))))));;
+})))))));
+cc1("one-again");
+ /* this will call cont2 and cont3 again */
+;
+cc1("two-again");
+ /* this will call cont3 again */
+;
+cc1("three-again");
+ /* this will call alert */
+;;
 #+END_SRC
 
 ** other supported syntaxes

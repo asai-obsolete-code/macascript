@@ -54,10 +54,3 @@
 	   (cc1 "two-again") (// "this will call cont3 again")
 	   (cc1 "three-again") (// "this will call alert")
 	   ))
-
-(maca ((var cc)
-	   (alert
-		(with-cc (cont)
-		  (= cc cont) 
-		  (cont "hello")))
-	   (cc "hello again!")))

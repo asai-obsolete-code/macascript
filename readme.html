@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
                "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-lang="en" xml:lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
 <head>
-<title>readme</title>
-<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
+<title>Yet another Javascript compiler Macascript</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="title" content="Yet another Javascript compiler Macascript"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-04-11 18:46:17 JST"/>
-<meta name="author" content="Masataro Asai"/>
+<meta name="generated" content="2012-04-12 20:32:49 JST"/>
+<meta name="author" content="浅井　政太郎 (Masataro Asai from Univ. of Tokyo)"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
 <style type="text/css">
@@ -44,6 +44,12 @@ lang="en" xml:lang="en">
   dt { font-weight: bold; }
   div.figure { padding: 0.5em; }
   div.figure p { text-align: center; }
+  div.inlinetask {
+    padding:10px;
+    border:2px solid gray;
+    margin:10px;
+    background: #ffffcc;
+  }
   textarea { overflow-x: auto; }
   .linenr { font-size:smaller }
   .code-highlighted {background-color:#ffff00;}
@@ -54,6 +60,22 @@ lang="en" xml:lang="en">
                                  font-weight:bold; }
   /*]]>*/-->
 </style>
+<link rel="stylesheet" type="text/css" href="readme.css" />
+<script type="text/javascript" src="http://orgmode.org/org-info.js"></script>
+<script type="text/javascript" >
+<!--/*--><![CDATA[/*><!--*/
+org_html_manager.set("TOC_DEPTH", "3");
+org_html_manager.set("LINK_HOME", "");
+org_html_manager.set("LINK_UP", "");
+org_html_manager.set("LOCAL_TOC", "1");
+org_html_manager.set("VIEW_BUTTONS", "0");
+org_html_manager.set("MOUSE_HINT", "underline");
+org_html_manager.set("FIXED_TOC", "0");
+org_html_manager.set("TOC", "1");
+org_html_manager.set("VIEW", "info");
+org_html_manager.setup();  // activate after the parameters are set
+/*]]>*///-->
+</script>
 <script type="text/javascript">
 <!--/*--><![CDATA[/*><!--*/
  function CodeHighlightOn(elem, id)
@@ -79,38 +101,46 @@ lang="en" xml:lang="en">
 
 </head>
 <body>
-<div id="content">
 
-<h1 class="title">readme</h1>
+<div id="preamble">
+
+</div>
+
+<div id="content">
+<h1 class="title">Yet another Javascript compiler Macascript</h1>
+
+
 
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#sec-1">1 Yet another Javascript compiler Macascript </a></li>
-<li><a href="#sec-2">2 Extend the syntax </a></li>
-<li><a href="#sec-3">3 How to try </a>
+<li><a href="#sec-1">1 Yet another Javascript compiler Macascript</a></li>
+<li><a href="#sec-2">2 Extend the syntax &ndash; the algorythm of  macascript</a></li>
+<li><a href="#sec-3">3 How to try</a>
 <ul>
-<li><a href="#sec-3-1">3.1 recommended software </a></li>
-<li><a href="#sec-3-2">3.2 run </a></li>
+<li><a href="#sec-3-1">3.1 recommended software</a></li>
+<li><a href="#sec-3-2">3.2 run</a></li>
 </ul>
 </li>
-<li><a href="#sec-4">4 Examples </a>
+<li><a href="#sec-4">4 Examples</a>
 <ul>
-<li><a href="#sec-4-1">4.1 Fundamentals </a></li>
-<li><a href="#sec-4-2">4.2 Procedure/Inline/Inherit-this function </a></li>
-<li><a href="#sec-4-3">4.3 other supported syntaxes </a></li>
-<li><a href="#sec-4-4">4.4 Using defmaca to define a new syntax </a></li>
+<li><a href="#sec-4-1">4.1 Fundamentals</a></li>
+<li><a href="#sec-4-2">4.2 Procedure/Inline/Inherit-this function</a></li>
+<li><a href="#sec-4-3">4.3 Call/cc</a></li>
+<li><a href="#sec-4-4">4.4 other supported syntaxes</a></li>
+<li><a href="#sec-4-5">4.5 Using defmaca to define a new syntax</a></li>
 </ul>
 </li>
-<li><a href="#sec-5">5 license </a></li>
-<li><a href="#sec-6">6 Author </a></li>
+<li><a href="#sec-5">5 Motivation</a></li>
+<li><a href="#sec-6">6 license</a></li>
+<li><a href="#sec-7">7 Author</a></li>
 </ul>
 </div>
 </div>
 
 <div id="outline-container-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> Yet another Javascript compiler Macascript </h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> Yet another Javascript compiler Macascript</h2>
 <div class="outline-text-2" id="text-1">
 
 
@@ -121,6 +151,417 @@ by parenscript and coffeescript.
 <p>
 I wasn't satisfied with either of them, so I made one myself.
 </p>
+<p>
+Macascript supports :
+</p><ul>
+<li>Conditional statements which returns a value
+</li>
+<li>Postfix if/unless
+</li>
+<li>Iteration with automatically collecting results if necessary
+</li>
+<li>Implicit return
+</li>
+<li>Call/cc
+</li>
+<li>Lisp Macro
+</li>
+<li>etc&hellip;
+</li>
+</ul>
+
+
+<p>
+Because macascript is aimed to be in fairly good accordance with Lisp
+and Macro, extending its syntax is far more easier than the other
+languages.  Some feature like &amp;rest or &amp;optional
+(which are already suppoerted in coffeescript) are soon to be
+implemented.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Extend the syntax &ndash; the algorythm of  macascript</h2>
+<div class="outline-text-2" id="text-2">
+
+
+<p>
+The macascript source code is simple because it uses pattern
+matching to parse the syntax tree.
+</p>
+<p>
+DEFMACA macro expands the syntax tree. (currently all syntaxes are
+implemented with DEFMACA.) The tree is compiled into 'compiled' special
+operator, which tells the compiler that the particular expression need
+not be compiled anymore. Finally, the compiled s-expression tree will
+be passed to a function `maca-format', which flattens the tree and
+prints its components. DEFMACA is almost identical to
+defmacro, so the people who knows macro would feel it really
+easy and fun to use.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> How to try</h2>
+<div class="outline-text-2" id="text-3">
+
+
+</div>
+
+<div id="outline-container-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> recommended software</h3>
+<div class="outline-text-3" id="text-3-1">
+
+<ul>
+<li><a href="http://www.sbcl.org/">sbcl</a> : The only lisp implimentation I've tested.
+</li>
+<li><a href="http://www.quicklisp.org/">quicklisp</a> : great software.
+</li>
+<li><a href="http://common-lisp.net/project/slime/">slime</a> : I greatly recommend you to install it if you are using
+  emacs. I'm an emacs user and don't know well about vim, so if you
+  have any information about a good interactive interface from vim to
+  lisp please tell me about it.
+</li>
+<li>packages : install them via quicklisp.
+<ul>
+<li>cl-match
+</li>
+<li>alexandria
+</li>
+<li>anaphora : I don't use it so much, but it's sometimes useful.
+</li>
+<li>cl-ppcre
+</li>
+</ul>
+
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> run</h3>
+<div class="outline-text-3" id="text-3-2">
+
+<p>Macascript is just an experimental code.
+so open the REPL in the repository and input these code to the interpreter: 
+</p>
+<ul>
+<li>if your implementation supports 'require:
+<ul>
+<li>(require 'macascript)
+</li>
+<li>(in-package :maca)
+</li>
+<li>(recompile)
+</li>
+</ul>
+
+</li>
+<li>or else:
+<ul>
+<li>(asdf:operate 'asdf:load-op 'macascript)
+</li>
+<li>(in-package :maca)
+</li>
+<li>(recompile)
+</li>
+</ul>
+
+</li>
+</ul>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Examples</h2>
+<div class="outline-text-2" id="text-4">
+
+
+</div>
+
+<div id="outline-container-4-1" class="outline-3">
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> Fundamentals</h3>
+<div class="outline-text-3" id="text-4-1">
+
+
+
+
+
+<pre class="src src-lisp">(maca (-&gt; (a)
+          (<span style="color: #a020f0;">if</span> (a b c)                   <span style="color: #b22222;">;</span><span style="color: #b22222;">multi-line then/else</span>
+              ((var d (+ a b c))        <span style="color: #b22222;">;</span><span style="color: #b22222;">infix argument and var declaration</span>
+               (var e (== a b c d)))                  <span style="color: #b22222;">; </span><span style="color: #b22222;">multiple comparison</span>
+              ((var f '(a (b c) (+ 1 2 3)))           <span style="color: #b22222;">; </span><span style="color: #b22222;">array literal</span>
+               (var g (<span style="color: #da70d6;">:a</span> a <span style="color: #da70d6;">:b</span> (b c) <span style="color: #da70d6;">:c</span> (+ 1 2 3))))) <span style="color: #b22222;">; </span><span style="color: #b22222;">object literal</span>
+          <span style="color: #b22222;">;; </span><span style="color: #b22222;">true if it's not undefined</span>
+          (if? a b c)
+
+          (granpa &gt; parent &gt; obj &gt; (child 2) &gt; grandchild 3 4 5)
+          <span style="color: #b22222;">;; </span><span style="color: #b22222;">direct access with []</span>
+          (obj &gt; 2 &gt; <span style="color: #bc8f8f;">"key"</span> &gt; 'key &gt; <span style="color: #da70d6;">:key</span>)
+          <span style="color: #b22222;">;; </span><span style="color: #b22222;">prototype accessor</span>
+          (obj &gt;&gt; child &gt; grandchild)
+          (obj &gt;&gt; (method a))
+          (obj &gt;&gt;)
+          <span style="color: #b22222;">;; </span><span style="color: #b22222;">existantial accessor</span>
+          (a ? b ? c)
+
+      <span style="color: #b22222;">;; </span><span style="color: #b22222;">if-statement with returning a value</span>
+      <span style="color: #b22222;">;; </span><span style="color: #b22222;">and alias from "or" to ||, "and" to &amp;&amp;</span>
+      (or ((<span style="color: #a020f0;">if</span> a b c) &gt; '(<span style="color: #a020f0;">if</span> d e f)) (and (x a) (x b)))
+      <span style="color: #b22222;">;; </span><span style="color: #b22222;">implicit return</span>
+      a))
+</pre>
+
+
+
+<pre class="src src-js"><span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">a</span>){
+    <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">d</span>,<span style="color: #b8860b;">e</span>,<span style="color: #b8860b;">f</span>,<span style="color: #b8860b;">g</span>,<span style="color: #b8860b;">tmp203</span>,<span style="color: #b8860b;">tmp204</span>;
+    <span style="color: #a020f0;">if</span>(a(b,c)){d = (a + (b + c))e = (a==b)&amp;&amp;(b==c)&amp;&amp;(c==d)
+    }<span style="color: #a020f0;">else</span>{f = [a,b(c),(1 + (2 + 3))]g = {a:a,b:b(c),c:(1 + (2 + 3))
+        }
+    };
+    <span style="color: #a020f0;">if</span>(((a!==<span style="color: #5f9ea0;">undefined</span>) &amp;&amp; ((<span style="color: #a020f0;">typeof</span> a)!==<span style="color: #bc8f8f;">"undefined"</span>))){b
+    }<span style="color: #a020f0;">else</span>{c
+    };
+    granpa.parent.obj.child(2).grandchild(3,4,5);
+    obj[2][<span style="color: #bc8f8f;">"key"</span>][key][key];
+    obj.<span style="color: #5f9ea0;">prototype</span>.child.grandchild;
+    obj.<span style="color: #5f9ea0;">prototype</span>.method(a);
+    obj.<span style="color: #5f9ea0;">prototype</span>;
+    ((((g1625 = a.b)!=<span style="color: #5f9ea0;">undefined</span>))?(((((g1626 = g1625.c)!=<span style="color: #5f9ea0;">undefined</span>))?(g1626):((<span style="color: #a020f0;">void</span> 0)))):((<span style="color: #a020f0;">void</span> 0)));
+    (<span style="color: #a020f0;">if</span>(a){tmp203 = b
+    }<span style="color: #a020f0;">else</span>{tmp203 = c
+    }<span style="color: #a020f0;">if</span>(d){tmp204 = e
+    }<span style="color: #a020f0;">else</span>{tmp204 = f
+    }tmp203[tmp204] || (x(a) &amp;&amp; x(b)));
+    <span style="color: #a020f0;">return</span> a;
+};
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4-2" class="outline-3">
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> Procedure/Inline/Inherit-this function</h3>
+<div class="outline-text-3" id="text-4-2">
+
+
+
+
+
+<pre class="src src-lisp">(maca (-/&gt; ()
+          <span style="color: #b22222;">;; </span><span style="color: #b22222;">inline function: maca expands it safely</span>
+          (-/ baz (a b) (+ (some-operation a) (other-operation b)))
+          (= foo (baz foo bar))
+
+          <span style="color: #b22222;">;; </span><span style="color: #b22222;">procedure function: functions without a implicit return</span>
+          (-/&gt; (b)
+              (<span style="color: #a020f0;">if</span> (&lt; b 3)
+                  (var a (+ 3 b))
+                  (var a (+ b 3)))
+              (= @a 2)                  <span style="color: #b22222;">; </span><span style="color: #b22222;">alias for this[a]</span>
+              <span style="color: #b22222;">;; </span><span style="color: #b22222;">inherit-this function (=&gt;): saves 'this' of the outer environment </span>
+              (($ <span style="color: #bc8f8f;">"button"</span>) &gt; (click (=&gt; (e) (alert (this &gt; 2))))))))
+</pre>
+
+
+
+<pre class="src src-js"><span style="color: #a020f0;">function</span>(){
+    <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp1443</span>,<span style="color: #b8860b;">tmp1444</span>,<span style="color: #b8860b;">tmp24</span>;
+    ;
+
+    tmp1444 = bar;
+    tmp1443 = foo;
+    tmp24 = (someOperation(tmp1443) + otherOperation(tmp1444));foo = tmp24;
+    <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">b</span>){
+        <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">a</span>,<span style="color: #b8860b;">t1452</span>,<span style="color: #b8860b;">f1453</span>;
+        t1452 = <span style="color: #5f9ea0;">this</span>;
+        f1453 = <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">e</span>){
+            <span style="color: #a020f0;">return</span> alert(t1452[2]);
+        };
+        <span style="color: #a020f0;">if</span>((b&lt;3)){a = (3 + b)
+        }<span style="color: #a020f0;">else</span>{a = (b + 3)
+        };
+        <span style="color: #5f9ea0;">this</span>.a = 2;
+        $(<span style="color: #bc8f8f;">"button"</span>).click(f1453);
+    };
+};
+</pre>
+
+</div>
+
+</div>
+
+<div id="outline-container-4-3" class="outline-3">
+<h3 id="sec-4-3"><span class="section-number-3">4.3</span> Call/cc</h3>
+<div class="outline-text-3" id="text-4-3">
+
+
+
+
+
+<pre class="src src-lisp">(maca ((alert
+        (<span style="color: #a020f0;">with-cc</span> (cont)
+          ($ &gt; (get <span style="color: #bc8f8f;">"http://google.com"</span>
+                    (-/&gt; (xhr) (cont (xhr &gt; responce-text)))))))))
+
+(maca ((var cc1)
+       (var cc2)
+       (var cc3)
+       (console &gt; log (<span style="color: #a020f0;">with-cc</span> (cont1) 
+              (= cc1 cont1)
+              (cont1 (confirm <span style="color: #bc8f8f;">"one"</span>)))
+            (<span style="color: #a020f0;">with-cc</span> (cont2)
+              (= cc2 cont2)
+              (cont2 (confirm <span style="color: #bc8f8f;">"two"</span>)))
+            5
+            (<span style="color: #a020f0;">with-cc</span> (cont3)
+              (= cc3 cont3)
+              (cont3 (confirm <span style="color: #bc8f8f;">"three"</span>)))
+            4)
+       (cc1 <span style="color: #bc8f8f;">"one-again"</span>) (// <span style="color: #bc8f8f;">"this will call cont2 and cont3 again"</span>)
+       (cc1 <span style="color: #bc8f8f;">"two-again"</span>) (// <span style="color: #bc8f8f;">"this will call cont3 again"</span>)
+       (cc1 <span style="color: #bc8f8f;">"three-again"</span>) (// <span style="color: #bc8f8f;">"this will call alert"</span>)
+       ))
+</pre>
+
+
+
+<pre class="src src-js"><span style="color: #a020f0;">var</span> <span style="color: #b8860b;">callLambda</span>;
+callLambda = <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">fn</span>){
+    <span style="color: #a020f0;">return</span> fn.call(<span style="color: #5f9ea0;">this</span>);
+};
+Object.<span style="color: #5f9ea0;">prototype</span>.callLambda = callLambda;
+
+callLambda(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont</span>){
+    $.get(<span style="color: #bc8f8f;">"http://google.com"</span>,<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">xhr</span>){
+        cont(xhr.responceText);
+    });
+})(<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg951</span>){
+    <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
+    <span style="color: #a020f0;">return</span> tmp121 = <span style="color: #a020f0;">function</span>(){
+        <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
+        <span style="color: #a020f0;">return</span> tmp121 = (<span style="color: #5f9ea0;">this</span>.alert || alert)(valueArg951);
+    };
+})));;
+
+<span style="color: #a020f0;">var</span> <span style="color: #b8860b;">cc1</span>,<span style="color: #b8860b;">cc2</span>,<span style="color: #b8860b;">cc3</span>;
+
+console.callLambda(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont1</span>){
+    cc1 = cont1;
+    cont1(confirm(<span style="color: #bc8f8f;">"one"</span>));
+})(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont2</span>){
+    cc2 = cont2;
+    cont2(confirm(<span style="color: #bc8f8f;">"two"</span>));
+})(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont3</span>){
+    cc3 = cont3;
+    cont3(confirm(<span style="color: #bc8f8f;">"three"</span>));
+})(<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg966</span>){
+    <span style="color: #a020f0;">return</span> <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg963</span>){
+        <span style="color: #a020f0;">return</span> <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg960</span>){
+            <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
+            <span style="color: #a020f0;">return</span> tmp121 = <span style="color: #a020f0;">function</span>(){
+                <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
+                <span style="color: #a020f0;">return</span> tmp121 = (<span style="color: #5f9ea0;">this</span>.log || log)(valueArg960,valueArg963,5,valueArg966,4);
+            };
+        };
+    };
+})))))));
+cc1(<span style="color: #bc8f8f;">"one-again"</span>);
+ <span style="color: #b22222;">/* </span><span style="color: #b22222;">this will call cont2 and cont3 again */</span>
+;
+cc1(<span style="color: #bc8f8f;">"two-again"</span>);
+ <span style="color: #b22222;">/* </span><span style="color: #b22222;">this will call cont3 again */</span>
+;
+cc1(<span style="color: #bc8f8f;">"three-again"</span>);
+ <span style="color: #b22222;">/* </span><span style="color: #b22222;">this will call alert */</span>
+;;
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4-4" class="outline-3">
+<h3 id="sec-4-4"><span class="section-number-3">4.4</span> other supported syntaxes</h3>
+<div class="outline-text-3" id="text-4-4">
+
+
+<ul>
+<li>Try-Catch-Finally.
+</li>
+<li>Iteration. It automatically collects the value of implicit return,
+  but it won't do it when it's not needed.
+</li>
+<li>while, do-while (which returns a value)
+</li>
+<li>switch, with multiple cases
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4-5" class="outline-3">
+<h3 id="sec-4-5"><span class="section-number-3">4.5</span> Using defmaca to define a new syntax</h3>
+<div class="outline-text-3" id="text-4-5">
+
+
+<p>
+Because macascript inherited the power of Macro from Common Lisp,
+macascript has its own syntax ``defmaca'' which defines a new macascript
+syntax.
+</p>
+
+
+
+<pre class="src src-lisp">(defmaca my-if (condition then <span style="color: #228b22;">&amp;optional</span> else)
+  `(<span style="color: #a020f0;">if</span> ,condition
+       ,then
+       ,else))
+
+(maca (-&gt; (a) (my-if a true false)))
+
+</pre>
+
+
+<p>
+If you really want to use the example above, you have to 
+add the syntax pattern to the appropriate parameter. This will be
+soon improved so that DEFMACA takes another argument for the
+matching pattern and automatically add it to the list.
+</p>
+<p>
+see test.maca for more examples.
+</p>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> Motivation</h2>
+<div class="outline-text-2" id="text-5">
+
+
 <p>
 The motivation is that Parenscript doesn't seem to fit the need of
 javascript programmers. It is rather a utility for the lisp
@@ -161,393 +602,38 @@ PROCEDURAL. Procedual, so its not easy to extend.
 
 </div>
 
-<div id="outline-container-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> Extend the syntax </h2>
-<div class="outline-text-2" id="text-2">
-
-
-<p>
-The macascript source code is really simple because the parsing of the
-S-expression tree relies on pattern matching provided with cl-match.
-</p>
-<p>
-Also defmaca macro greatly helps you extend the syntax. All
-syntaxes but 'glue' and 'redundant-paren' are currently implemented
-with that macro. All macro will be finally compiled into 'glue'
-special macro, which just prints a series of atoms in its
-arguments. 'defmaca' is almost identical to
-defmacro, so the people who understands macro would feel it really
-easy and fun to use.
-</p>
-<p>
-Have fun extending js syntax!
-</p>
-</div>
-
-</div>
-
-<div id="outline-container-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> How to try </h2>
-<div class="outline-text-2" id="text-3">
-
-
-
-</div>
-
-<div id="outline-container-3-1" class="outline-3">
-<h3 id="sec-3-1"><span class="section-number-3">3.1</span> recommended software </h3>
-<div class="outline-text-3" id="text-3-1">
-
-<ul>
-<li><a href="http://www.sbcl.org/">sbcl</a> : The only lisp implimentation I've tested.
-</li>
-<li><a href="http://www.quicklisp.org/">quicklisp</a> : great software.
-</li>
-<li><a href="http://common-lisp.net/project/slime/">slime</a> : I greatly recommend you to install it if you are using
-  emacs. I'm an emacs user and don't know well about vim, so if you
-  have any information about a good interactive interface from vim to
-  lisp please tell me about it.
-</li>
-<li>packages : install them via quicklisp.
-<ul>
-<li>cl-match
-</li>
-<li>alexandria
-</li>
-<li>anaphora : I don't use it so much, but it's sometimes useful.
-</li>
-<li>cl-ppcre
-</li>
-</ul>
-
-</li>
-</ul>
-
-
-</div>
-
-</div>
-
-<div id="outline-container-3-2" class="outline-3">
-<h3 id="sec-3-2"><span class="section-number-3">3.2</span> run </h3>
-<div class="outline-text-3" id="text-3-2">
-
-<p>Macascript is just an experimental code.
-so open the REPL in the repository and input these code to the interpreter: 
-</p>
-<ul>
-<li>if your implementation supports 'require:
-<ul>
-<li>(require 'macascript)
-</li>
-<li>(in-package :maca)
-</li>
-<li>(recompile)
-</li>
-</ul>
-
-</li>
-<li>or else:
-<ul>
-<li>(asdf:operate 'asdf:load-op 'macascript)
-</li>
-<li>(in-package :maca)
-</li>
-<li>(recompile)
-</li>
-</ul>
-
-</li>
-</ul>
-
-
-</div>
-</div>
-
-</div>
-
-<div id="outline-container-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> Examples </h2>
-<div class="outline-text-2" id="text-4">
-
-
-</div>
-
-<div id="outline-container-4-1" class="outline-3">
-<h3 id="sec-4-1"><span class="section-number-3">4.1</span> Fundamentals </h3>
-<div class="outline-text-3" id="text-4-1">
-
-
-
-
-
-<pre class="example">(maca (-&gt; (a)
-          (if (a b c)                   ;multi-line then/else
-              ((var d (- a b c))        ;infix argument and var declaration
-               (var e (== a b c d)))                  ; multiple comparison
-              ((var f '(a (b c) (+ 1 2 3)))           ; array literal
-               (var g (:a a :b (b c) :c (+ 1 2 3))))) ; object literal
-          ;; true if it's not undefined
-          (if? a b c)
-
-          (granpa &gt; parent &gt; obj &gt; (child 2) &gt; grandchild 3 4 5)
-          ;; direct access with []
-          (obj &gt; 2 &gt; "key" &gt; 'key &gt; :key)
-          ;; prototype accessor
-          (obj &gt;&gt; child &gt; grandchild)
-          (obj &gt;&gt; (method a))
-          (obj &gt;&gt;)
-          ;; existantial accessor
-          (a ? b ? c)
-
-          ;; if-statement with returning a value
-          ;; and alias from "or" to ||, "and" to &amp;&amp;
-          (or ((if a b c) &gt; '(if d e f)) (and (x a) (x b)))
-          ;; implicit return
-          a))
-
-</pre>
-
-
-
-
-
-<pre class="example">function(a){
-var d,e,f,g,temp1248,temp1249;
-if(a(b,c)){
-d = (a-(b-c))e = (a==b)&amp;&amp;(b==c)&amp;&amp;(c==d)}else{
-f = [a,b(c),(1+(2+3))];
-g = {
-c:(1+(2+3)),b:b(c),a:a}}if(((a!==undefined)&amp;&amp;((typeof a)!=="undefined"))){
-b}else{
-c};
-granpa.parent.obj.child(2).grandchild(3,4,5);
-obj[1]["key"][key][key];
-obj.prototype.child.grandchild;
-obj.prototype.method(a);
-obj.prototype;
-(((g1246 = a.b)!=undefined))?((((g1247 = g1246.c)!=undefined))?(g1247):((void 0))):((void 0));
-((if(a){
-temp1248 = b;
-}else{
-temp1248 = c;
-},temp1248)[(if(d){
-temp1249 = e;
-}else{
-temp1249 = f;
-},temp1249)]||(x(a)&amp;&amp;x(b)));
-return(a);
-}
-
-</pre>
-
-
-
-
-</div>
-
-</div>
-
-<div id="outline-container-4-2" class="outline-3">
-<h3 id="sec-4-2"><span class="section-number-3">4.2</span> Procedure/Inline/Inherit-this function </h3>
-<div class="outline-text-3" id="text-4-2">
-
-
-
-
-
-<pre class="example">(maca (-/&gt; ()
-          ;; inline function: maca expands it safely
-          (-/ baz (a b) (+ (some-operation a) (other-operation b)))
-          (= foo (baz foo bar))
-
-          ;; procedure function: functions without a implicit return
-          (-/&gt; (b)
-              (if (&lt; b 3)
-                  (var a (- 3 b))
-                  (var a (- b 3)))
-              (= @a 2)                  ; alias for this[a]
-              ;; inherit-this function (=&gt;): saves 'this' of the outer environment 
-              (($ "button") &gt; (click (=&gt; (e) (alert (this &gt; 2))))))))
-
-</pre>
-
-
-
-
-
-<pre class="example">function(){
-        var tmp1443,tmp1444,tmp24;
-        ;
-
-        tmp1444 = bar;
-        tmp1443 = foo;
-        tmp24 = (someOperation(tmp1443) + otherOperation(tmp1444));foo = tmp24;
-        function(b){
-                var a,t1452,f1453;
-                t1452 = this;
-                f1453 = function(e){
-                        return alert(t1452[1]);
-                };
-                if((b&lt;3)){a = (3 NIL b)
-                }else{a = (b NIL 3)
-                };
-                this.a = 2;
-                $("button").click(f1453);
-        };
-};
-
-</pre>
-
-
-
-
-</div>
-
-</div>
-
-<div id="outline-container-4-3" class="outline-3">
-<h3 id="sec-4-3"><span class="section-number-3">4.3</span> other supported syntaxes </h3>
-<div class="outline-text-3" id="text-4-3">
-
-
-<ul>
-<li>Try-Catch-Finally.
-</li>
-<li>Iteration. It automatically collects the value of implicit return,
-  but it won't do it when it's not needed.
-</li>
-<li>while, do-while (which returns a value)
-</li>
-<li>switch, with multiple cases
-</li>
-</ul>
-
-
-</div>
-
-</div>
-
-<div id="outline-container-4-4" class="outline-3">
-<h3 id="sec-4-4"><span class="section-number-3">4.4</span> Using defmaca to define a new syntax </h3>
-<div class="outline-text-3" id="text-4-4">
-
-
-<p>
-Because macascript inherited the power of Macro from Common Lisp,
-macascript has its own syntax ``defmaca'' which defines a new macascript
-syntax.
-</p>
-
-
-
-<pre class="example">(defmaca my-if (condition then &amp;optional else)
-  `(if ,condition
-       then
-       else))
-
-(maca (-&gt; (a) (my-if a true false)))
-
-
-</pre>
-
-
-
-
-<p>
-If you really want to use the example above, you have to 
-add the syntax pattern to the appropriate parameter. This will be
-soon improved so that DEFMACA takes another argument for the
-matching pattern and automatically add it to the list.
-</p>
-<p>
-See the another example below. I've implemented call/cc!
-</p>
-
-
-
-<pre class="example">(maca ((console &gt; log
- (with-cc (cont1) (cont1 (confirm "one")))
- (with-cc (cont2) (cont2 (confirm "two")))
- 5
- (with-cc (cont3) (cont3 (confirm "three")))
- 4)))
-
-</pre>
-
-
-
-
-
-<pre class="example">var arg1477;
-
-console.log.apply(this,arg1477 = (function(cont1){
-        cont1(confirm("one"));
-})((function(cont2){
-        cont2(confirm("two"));
-})((function(cont3){
-        cont3(confirm("three"));
-})(function(valueArg1461){
-        return function(valueArg1458){
-                return function(valueArg1455){
-                        var tmp121;
-                        return tmp121 = [valueArg1455,valueArg1458,5,valueArg1461,4];
-                };
-        };
-})))());;
-
-</pre>
-
-
-
-
-<p>
-see test.maca for more examples.
-</p>
-</div>
-</div>
-
-</div>
-
-<div id="outline-container-5" class="outline-2">
-<h2 id="sec-5"><span class="section-number-2">5</span> license </h2>
-<div class="outline-text-2" id="text-5">
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> license</h2>
+<div class="outline-text-2" id="text-6">
 
 
 <p>
 Currently I haven't decided which license I should choose. 
-Please give me some advice.
+I suppose MIT license best suits the condition&hellip;
 </p>
 </div>
 
 </div>
 
-<div id="outline-container-6" class="outline-2">
-<h2 id="sec-6"><span class="section-number-2">6</span> Author </h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> Author</h2>
+<div class="outline-text-2" id="text-7">
 
 
 <p>
 Masataro Asai (guicho2.71828@gmail.com)
 Univ. of Tokyo
 </p>
-
-<div id="footnotes">
-<h2 class="footnotes">Footnotes: </h2>
-<div id="text-footnotes">
-<p class="footnote"><sup><a class="footnum" name="fn.1" href="#fnr.1">1</a></sup> DEFINITION NOT FOUND: 2
-</p>
+</div>
 </div>
 </div>
 
-</div>
-</div>
 <div id="postamble">
-<p class="date">Date: 2012-04-11 18:46:17 JST</p>
-<p class="author">Author: Masataro Asai</p>
-<p class="creator">Org version 7.6 with Emacs version 23</p>
+<p class="date">Date: 2012-04-12 20:32:49 JST</p>
+<p class="author">Author: 浅井　政太郎 (Masataro Asai from Univ. of Tokyo)</p>
+<p class="creator">Org version 7.8.09 with Emacs version 22</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
-</div>
+
 </div>
 </body>
 </html>

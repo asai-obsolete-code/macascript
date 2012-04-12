@@ -29,12 +29,12 @@
 ;; this is currently necessary for with-cc operation
 ;;   (this will be fixed in the future improvement)
 
-(maca (= (|Object| >> call-lambda)
-		 (-> (fn)
-			 (fn > call this)))
-	  (var call-lambda
-		 (-> (fn)
-			 (fn > call this))))
+;; (maca (= (|Object| >> call-lambda)
+;; 		 (-> (fn)
+;; 			 (fn > call this)))
+;; 	  (var call-lambda
+;; 		 (-> (fn)
+;; 			 (fn > call this))))
 
 (defmaca (m-function-call :environment env :is-value t) (op args)
   (let (handlers actual-args value-args)
