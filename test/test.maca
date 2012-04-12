@@ -13,6 +13,7 @@
 (maca (paren (paren (paren a))))			;reduces redundancy automatically
 (maca (comma (comma a b c) (comma a b c)))
 (maca (comma a b c))
+(maca (stringify a))
 (maca (blk ((a b c))))
 (maca (blk 
 	   ((blk 

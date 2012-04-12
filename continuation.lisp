@@ -19,4 +19,4 @@
 
 
 (defmaca (m-with-cc :environment env :is-value t) (cc body)
-  `(-/> (,cc) ,@body))
+  `(-> (,cc) ,@body))

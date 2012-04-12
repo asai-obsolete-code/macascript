@@ -18,11 +18,16 @@
 	;; ((list* 'sentence sentence) (rewrite m-js-sentence sentence))
 	;; ((list* 'non-sentence sentence) (rewrite m-js-non-sentence sentence))
 
+	((list* '--- (type atom op) (as chain-arguments (list* (list* _))))
+	 (rewrite m-chain-function-call op chain-arguments))
+
 	((list* (type atom op) arguments)
 	 (multiple-value-bind (lmb found-cl) (search-lambda op env)
 	   (if lmb
 		   (rewrite m-inline-function-call arguments lmb found-cl)
 		   (rewrite m-function-call op arguments))))
+
+
 	((list) (values nil t 'null))
 	((list* sentences) (rewrite m-sentences sentences))))
 
@@ -35,6 +40,11 @@
 ;; 	  (var call-lambda
 ;; 		 (-> (fn)
 ;; 			 (fn > call this))))
+
+(defmaca (m-chain-function-call :is-value t) (op chain-arguments)
+  `(glue (,op ,@(car chain-arguments))
+		 ,@(mapcar #'(lambda (args) `(paren (comma ,@args)))
+				   (cdr chain-arguments))))
 
 (defmaca (m-function-call :environment env :is-value t) (op args)
   (let (handlers actual-args value-args)
@@ -50,18 +60,15 @@
 		(let ((result 
 			   (with-set-temps-in-list 
 				   (env (reverse actual-args) temps)
-				 `(-> ()
-					  (glue
-					   (or (this > ,op) ,op)
-					   (paren (comma ,@temps)))))))
-		  (loop for arg in (reverse value-args) do
+				 `(,op ,@temps))))
+		  (loop for arg in value-args do
 			   (setf result `(-> (,arg) ,result)))
-		  (loop for handler in handlers do
+		  (loop for handler in (reverse handlers) do
 			   (setf result 
 					 `(paren (glue
-					   (paren ,handler)
-					   (paren ,result)))))
-		  `(call-lambda ,result))
+							  (paren ,handler)
+							  (paren ,result)))))
+		  result)
 		(with-set-temps-in-list (env args temps)
 		  `(glue ,op (paren (comma ,@temps)))))))
 

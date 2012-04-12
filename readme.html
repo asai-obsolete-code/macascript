@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
 <meta name="title" content="Yet another Javascript compiler Macascript"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-04-12 20:32:49 JST"/>
+<meta name="generated" content="2012-04-12 22:08:54 JST"/>
 <meta name="author" content="浅井　政太郎 (Masataro Asai from Univ. of Tokyo)"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -162,7 +162,8 @@ Macascript supports :
 </li>
 <li>Implicit return
 </li>
-<li>Call/cc
+<li>Call/cc (not fully functional, it's valid only when it is in the
+  middle of a function call. Use try/catch for <i>global exti</i>.)
 </li>
 <li>Lisp Macro
 </li>
@@ -318,6 +319,9 @@ so open the REPL in the repository and input these code to the interpreter:
           <span style="color: #b22222;">;; </span><span style="color: #b22222;">existantial accessor</span>
           (a ? b ? c)
 
+          <span style="color: #b22222;">;; </span><span style="color: #b22222;">function call chaining</span>
+          (--- cc1 (<span style="color: #bc8f8f;">"one-again"</span>) (<span style="color: #bc8f8f;">"two-again"</span>) (<span style="color: #bc8f8f;">"three-again"</span>))
+
       <span style="color: #b22222;">;; </span><span style="color: #b22222;">if-statement with returning a value</span>
       <span style="color: #b22222;">;; </span><span style="color: #b22222;">and alias from "or" to ||, "and" to &amp;&amp;</span>
       (or ((<span style="color: #a020f0;">if</span> a b c) &gt; '(<span style="color: #a020f0;">if</span> d e f)) (and (x a) (x b)))
@@ -342,6 +346,7 @@ so open the REPL in the repository and input these code to the interpreter:
     obj.<span style="color: #5f9ea0;">prototype</span>.method(a);
     obj.<span style="color: #5f9ea0;">prototype</span>;
     ((((g1625 = a.b)!=<span style="color: #5f9ea0;">undefined</span>))?(((((g1626 = g1625.c)!=<span style="color: #5f9ea0;">undefined</span>))?(g1626):((<span style="color: #a020f0;">void</span> 0)))):((<span style="color: #a020f0;">void</span> 0)));
+    cc1(<span style="color: #bc8f8f;">"one-again"</span>)(<span style="color: #bc8f8f;">"two-again"</span>)(<span style="color: #bc8f8f;">"three-again"</span>);
     (<span style="color: #a020f0;">if</span>(a){tmp203 = b
     }<span style="color: #a020f0;">else</span>{tmp203 = c
     }<span style="color: #a020f0;">if</span>(d){tmp204 = e
@@ -423,72 +428,68 @@ so open the REPL in the repository and input these code to the interpreter:
 (maca ((var cc1)
        (var cc2)
        (var cc3)
-       (console &gt; log (<span style="color: #a020f0;">with-cc</span> (cont1) 
-              (= cc1 cont1)
-              (cont1 (confirm <span style="color: #bc8f8f;">"one"</span>)))
-            (<span style="color: #a020f0;">with-cc</span> (cont2)
-              (= cc2 cont2)
-              (cont2 (confirm <span style="color: #bc8f8f;">"two"</span>)))
-            5
-            (<span style="color: #a020f0;">with-cc</span> (cont3)
-              (= cc3 cont3)
-              (cont3 (confirm <span style="color: #bc8f8f;">"three"</span>)))
-            4)
-       (cc1 <span style="color: #bc8f8f;">"one-again"</span>) (// <span style="color: #bc8f8f;">"this will call cont2 and cont3 again"</span>)
-       (cc1 <span style="color: #bc8f8f;">"two-again"</span>) (// <span style="color: #bc8f8f;">"this will call cont3 again"</span>)
-       (cc1 <span style="color: #bc8f8f;">"three-again"</span>) (// <span style="color: #bc8f8f;">"this will call alert"</span>)
-       ))
+       (alert (<span style="color: #a020f0;">with-cc</span> (cont1) 
+                (= cc1 cont1)
+                (cont1 (confirm <span style="color: #bc8f8f;">"one"</span>)))
+              (<span style="color: #a020f0;">with-cc</span> (cont2)
+                (= cc2 cont2)
+                (cont2 (confirm <span style="color: #bc8f8f;">"two"</span>)))
+              5
+              (<span style="color: #a020f0;">with-cc</span> (cont3)
+                (= cc3 cont3)
+                (cont3 (confirm <span style="color: #bc8f8f;">"three"</span>)))
+              4)
+       (console &gt; (log (cc1 &gt; (to-string))))
+       (--- cc1 (<span style="color: #bc8f8f;">"one-again"</span>) (<span style="color: #bc8f8f;">"two-again"</span>) (<span style="color: #bc8f8f;">"three-again"</span>))
+       (// <span style="color: #bc8f8f;">"this will call cont2 and cont3 again"</span>)
+       (console &gt; (log (cc2 &gt; (to-string))))
+       (--- cc2  (<span style="color: #bc8f8f;">"two-again"</span>) (<span style="color: #bc8f8f;">"three-again"</span>))
+       (// <span style="color: #bc8f8f;">"this will call cont3 again"</span>)
+       (console &gt; (log (cc3 &gt; (to-string))))
+       (--- cc3 (<span style="color: #bc8f8f;">"three-again"</span>))
+       (// <span style="color: #bc8f8f;">"this will call alert"</span>)))
 </pre>
 
 
 
-<pre class="src src-js"><span style="color: #a020f0;">var</span> <span style="color: #b8860b;">callLambda</span>;
-callLambda = <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">fn</span>){
-    <span style="color: #a020f0;">return</span> fn.call(<span style="color: #5f9ea0;">this</span>);
-};
-Object.<span style="color: #5f9ea0;">prototype</span>.callLambda = callLambda;
-
-callLambda(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont</span>){
-    $.get(<span style="color: #bc8f8f;">"http://google.com"</span>,<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">xhr</span>){
+<pre class="src src-js">((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont</span>){
+    <span style="color: #a020f0;">return</span> $.get(<span style="color: #bc8f8f;">"http://google.com"</span>,<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">xhr</span>){
         cont(xhr.responceText);
     });
-})(<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg951</span>){
+})(<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg1053</span>){
     <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
-    <span style="color: #a020f0;">return</span> tmp121 = <span style="color: #a020f0;">function</span>(){
-        <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
-        <span style="color: #a020f0;">return</span> tmp121 = (<span style="color: #5f9ea0;">this</span>.alert || alert)(valueArg951);
-    };
-})));;
+    <span style="color: #a020f0;">return</span> tmp121 = alert(valueArg1053);
+}));;
 
 <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">cc1</span>,<span style="color: #b8860b;">cc2</span>,<span style="color: #b8860b;">cc3</span>;
 
-console.callLambda(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont1</span>){
-    cc1 = cont1;
-    cont1(confirm(<span style="color: #bc8f8f;">"one"</span>));
+((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont3</span>){
+    cc3 = cont3;
+    <span style="color: #a020f0;">return</span> cont3(confirm(<span style="color: #bc8f8f;">"three"</span>));
 })(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont2</span>){
     cc2 = cont2;
-    cont2(confirm(<span style="color: #bc8f8f;">"two"</span>));
-})(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont3</span>){
-    cc3 = cont3;
-    cont3(confirm(<span style="color: #bc8f8f;">"three"</span>));
-})(<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg966</span>){
-    <span style="color: #a020f0;">return</span> <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg963</span>){
-        <span style="color: #a020f0;">return</span> <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg960</span>){
+    <span style="color: #a020f0;">return</span> cont2(confirm(<span style="color: #bc8f8f;">"two"</span>));
+})(((<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">cont1</span>){
+    cc1 = cont1;
+    <span style="color: #a020f0;">return</span> cont1(confirm(<span style="color: #bc8f8f;">"one"</span>));
+})(<span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg1062</span>){
+    <span style="color: #a020f0;">return</span> <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg1065</span>){
+        <span style="color: #a020f0;">return</span> <span style="color: #a020f0;">function</span>(<span style="color: #b8860b;">valueArg1068</span>){
             <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
-            <span style="color: #a020f0;">return</span> tmp121 = <span style="color: #a020f0;">function</span>(){
-                <span style="color: #a020f0;">var</span> <span style="color: #b8860b;">tmp121</span>;
-                <span style="color: #a020f0;">return</span> tmp121 = (<span style="color: #5f9ea0;">this</span>.log || log)(valueArg960,valueArg963,5,valueArg966,4);
-            };
+            <span style="color: #a020f0;">return</span> tmp121 = alert(valueArg1062,valueArg1065,5,valueArg1068,4);
         };
     };
-})))))));
-cc1(<span style="color: #bc8f8f;">"one-again"</span>);
+}))))));
+console.log(cc1.toString());
+cc1(<span style="color: #bc8f8f;">"one-again"</span>)(<span style="color: #bc8f8f;">"two-again"</span>)(<span style="color: #bc8f8f;">"three-again"</span>);
  <span style="color: #b22222;">/* </span><span style="color: #b22222;">this will call cont2 and cont3 again */</span>
 ;
-cc1(<span style="color: #bc8f8f;">"two-again"</span>);
+console.log(cc2.toString());
+cc2(<span style="color: #bc8f8f;">"two-again"</span>)(<span style="color: #bc8f8f;">"three-again"</span>);
  <span style="color: #b22222;">/* </span><span style="color: #b22222;">this will call cont3 again */</span>
 ;
-cc1(<span style="color: #bc8f8f;">"three-again"</span>);
+console.log(cc3.toString());
+cc3(<span style="color: #bc8f8f;">"three-again"</span>);
  <span style="color: #b22222;">/* </span><span style="color: #b22222;">this will call alert */</span>
 ;;
 </pre>
@@ -629,7 +630,7 @@ Univ. of Tokyo
 </div>
 
 <div id="postamble">
-<p class="date">Date: 2012-04-12 20:32:49 JST</p>
+<p class="date">Date: 2012-04-12 22:08:54 JST</p>
 <p class="author">Author: 浅井　政太郎 (Masataro Asai from Univ. of Tokyo)</p>
 <p class="creator">Org version 7.8.09 with Emacs version 22</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>

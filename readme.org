@@ -18,7 +18,8 @@ Macascript supports :
 + Postfix if/unless
 + Iteration with automatically collecting results if necessary
 + Implicit return
-+ Call/cc
++ Call/cc (not fully functional, it's valid only when it is in the
+  middle of a function call. Use try/catch for /global exti/.)
 + Lisp Macro
 + etc...
 
@@ -92,6 +93,9 @@ so open the REPL in the repository and input these code to the interpreter:
           ;; existantial accessor
           (a ? b ? c)
 
+          ;; function call chaining
+          (--- cc1 ("one-again") ("two-again") ("three-again"))
+
 	  ;; if-statement with returning a value
 	  ;; and alias from "or" to ||, "and" to &&
 	  (or ((if a b c) > '(if d e f)) (and (x a) (x b)))
@@ -115,6 +119,7 @@ function(a){
 	obj.prototype.method(a);
 	obj.prototype;
 	((((g1625 = a.b)!=undefined))?(((((g1626 = g1625.c)!=undefined))?(g1626):((void 0)))):((void 0)));
+    cc1("one-again")("two-again")("three-again");
 	(if(a){tmp203 = b
 	}else{tmp203 = c
 	}if(d){tmp204 = e
@@ -175,71 +180,67 @@ function(){
 (maca ((var cc1)
 	   (var cc2)
 	   (var cc3)
-	   (console > log (with-cc (cont1) 
-			  (= cc1 cont1)
-			  (cont1 (confirm "one")))
-			(with-cc (cont2)
-			  (= cc2 cont2)
-			  (cont2 (confirm "two")))
-			5
-			(with-cc (cont3)
-			  (= cc3 cont3)
-			  (cont3 (confirm "three")))
-			4)
-	   (cc1 "one-again") (// "this will call cont2 and cont3 again")
-	   (cc1 "two-again") (// "this will call cont3 again")
-	   (cc1 "three-again") (// "this will call alert")
-	   ))
+	   (alert (with-cc (cont1) 
+				(= cc1 cont1)
+				(cont1 (confirm "one")))
+			  (with-cc (cont2)
+				(= cc2 cont2)
+				(cont2 (confirm "two")))
+			  5
+			  (with-cc (cont3)
+				(= cc3 cont3)
+				(cont3 (confirm "three")))
+			  4)
+	   (console > (log (cc1 > (to-string))))
+	   (--- cc1 ("one-again") ("two-again") ("three-again"))
+	   (// "this will call cont2 and cont3 again")
+	   (console > (log (cc2 > (to-string))))
+	   (--- cc2  ("two-again") ("three-again"))
+	   (// "this will call cont3 again")
+	   (console > (log (cc3 > (to-string))))
+	   (--- cc3 ("three-again"))
+	   (// "this will call alert")))
 #+END_SRC
 
 #+BEGIN_SRC js
-var callLambda;
-callLambda = function(fn){
-	return fn.call(this);
-};
-Object.prototype.callLambda = callLambda;
-
-callLambda(((function(cont){
-	$.get("http://google.com",function(xhr){
+((function(cont){
+	return $.get("http://google.com",function(xhr){
 		cont(xhr.responceText);
 	});
-})(function(valueArg951){
+})(function(valueArg1053){
 	var tmp121;
-	return tmp121 = function(){
-		var tmp121;
-		return tmp121 = (this.alert || alert)(valueArg951);
-	};
-})));;
+	return tmp121 = alert(valueArg1053);
+}));;
 
 var cc1,cc2,cc3;
 
-console.callLambda(((function(cont1){
-	cc1 = cont1;
-	cont1(confirm("one"));
+((function(cont3){
+	cc3 = cont3;
+	return cont3(confirm("three"));
 })(((function(cont2){
 	cc2 = cont2;
-	cont2(confirm("two"));
-})(((function(cont3){
-	cc3 = cont3;
-	cont3(confirm("three"));
-})(function(valueArg966){
-	return function(valueArg963){
-		return function(valueArg960){
+	return cont2(confirm("two"));
+})(((function(cont1){
+	cc1 = cont1;
+	return cont1(confirm("one"));
+})(function(valueArg1062){
+	return function(valueArg1065){
+		return function(valueArg1068){
 			var tmp121;
-			return tmp121 = function(){
-				var tmp121;
-				return tmp121 = (this.log || log)(valueArg960,valueArg963,5,valueArg966,4);
-			};
+			return tmp121 = alert(valueArg1062,valueArg1065,5,valueArg1068,4);
 		};
 	};
-})))))));
-cc1("one-again");
+}))))));
+console.log(cc1.toString());
+cc1("one-again")("two-again")("three-again");
  /* this will call cont2 and cont3 again */
 ;
-cc1("two-again");
+console.log(cc2.toString());
+cc2("two-again")("three-again");
  /* this will call cont3 again */
 ;
-cc1("three-again");
+console.log(cc3.toString());
+cc3("three-again");
  /* this will call alert */
 ;;
 #+END_SRC
