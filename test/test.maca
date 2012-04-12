@@ -42,6 +42,8 @@
 (maca (>>> number 3))
 (maca (+ a 3))
 (maca (+ a 3 4))
+(maca (- a 3 4))
+(maca (* a 3 4))
 (maca (+ a 3 (>>> number 3)))
 
 ;; assignments
