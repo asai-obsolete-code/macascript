@@ -29,9 +29,11 @@
 								 (format nil "\"~a\"" arg))
 								(t arg)))
 						  args))))
-	(if tmp
-		`(var ,tmp ,body)
-		body)
+	;; ????
+	;; (if tmp
+	;; 	`(var ,tmp ,body)
+	;; 	body)
+	body
 	))
 
 (defmaca (m-paren :is-value t) (arg)
@@ -47,13 +49,14 @@
   `(glue lbrace
 		 (// ,(format nil "indentation level: ~a"
 					  (env-indents env)))
+		 (newline-and-indent)
 		 ,@(let (contents)
 				(incf (closure-indentation (car env)))
 				(setf contents (m-compile env `(sentences ,@arg)))
 				(decf (closure-indentation (car env)))
 				contents)
-		 (newline-and-indent)
-		 rbrace))
+		 rbrace
+		 (newline-and-indent)))
 
 (defmaca (m-comma :is-value t) (args)
   `(glue ,@(mapcan

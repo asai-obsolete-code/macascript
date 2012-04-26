@@ -65,10 +65,13 @@
 	  op))
 
 
-(defmaca (m-inline-function-call :environment env :return return-as)
+(defmaca (m-inline-function-call :environment env
+								 :return return-as)
 	(args lmb found-cl)
   (destructuring-bind (lambda-list . body) lmb
-	(let ((temps (mapcar #'(lambda (x) (declare (ignore x)) (gensym "INLINE-TMP"))
+	(let ((temps (mapcar #'(lambda (x)
+							 (declare (ignore x))
+							 (gensym "INLINE-TMP"))
 						 lambda-list))
 		  (copying-script nil))
 	  (loop
@@ -80,8 +83,8 @@
 		 do (push `(= ,temp ,arg) copying-script))
 	  ;;(break "~a" return-as)
 	  (if return-as 
-		  `(,@copying-script
-			,@(1-or-2-line-set-temp body return-as))
+		  `(sentences ,@copying-script
+					  ,@(1-or-2-line-set-temp body return-as))
 		  (with-set-temp env (body) body)))))
 
 (defparameter *non-sentence-ops*
@@ -91,7 +94,7 @@
   (compile-let* env ((compiled-sent sent))
 ;	(break "~a~%~a" compiled-sent env)
 	(if compiled-sent
-		`(glue (newline-and-indent) ,sent semicolon)
+		`(glue ,sent semicolon (newline-and-indent))
 		`(glue ,sent))))
 
 (defmaca m-sentences (sents)

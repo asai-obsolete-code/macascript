@@ -45,28 +45,30 @@
 
 
 (defmacro with-set-temp (env scripts &body body)
-  (let ((binds (mapcar #'(lambda (script) (cons script (gensym))) scripts)))
+  (let ((binds (mapcar #'(lambda (script)
+						   (cons script (gensym "BINDING")))
+					   scripts)))
 	`(let ,(mapcar #'cdr binds)
-	   `(glue ,,@(mapcar
-				  #'(lambda (bind)
-					  (let ((script (car bind))
-							(compiled-script-slot (cdr bind))
-							(temp (gensym "TMP")))
-						`(multiple-value-bind (compiled is-value type)
-							 (m-compile ,env ,script :return ',temp)
-						   ;; (break "arg: ~a~%compiled: ~a~%return-as: ~a~%is-value: ~a~%type: ~a"
-						   ;; 		  ,script compiled ',temp is-value type)
-						   (if is-value 
-							   (progn
-								 (setf ,compiled-script-slot compiled)
-								 nil)
-							   (progn
-								 (setf ,compiled-script-slot ',temp) 
-								 compiled)))))
-				  binds)
-			  ,(let* ,(mapcar #'(lambda (bind)
-								  (list (car bind) (cdr bind))) binds)
-					 ,@body)))))
+	   `(glue 
+		 ,,@(mapcar
+			 #'(lambda (bind)
+				 (let ((script (car bind))
+					   (compiled-script-slot (cdr bind)))
+				   `(with-gensyms (setter-temp)
+					  (multiple-value-bind (compiled is-value type)
+						  (m-compile ,env ,script :return setter-temp)
+						(if is-value 
+							(progn
+							  (setf ,compiled-script-slot compiled)
+							  nil)
+							(progn
+							  (setf ,compiled-script-slot setter-temp)
+							  compiled))))))
+			 binds)
+		 ,(let* ,(mapcar #'(lambda (bind)
+							 (list (car bind) (cdr bind)))
+						 binds)
+				,@body)))))
 
 (defmacro compile-let* (env args &body body)
   `(let* ,(mapcar #'(lambda (arg) 
@@ -97,7 +99,9 @@
 (defmacro with-set-temps-in-list ((env lst temps-name) &body body)
   (with-gensyms (temp-syms body-args compiled-args var-list)
 	`(let* ((,temp-syms
-			 (mapcar #'(lambda (arg) (declare (ignore arg)) (gensym "arg"))
+			 (mapcar #'(lambda (arg)
+						 (declare (ignore arg))
+						 (gensym "ARG-NAME"))
 					 ,lst))
 			,body-args ,var-list
 			(,compiled-args

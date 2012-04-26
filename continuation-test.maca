@@ -62,7 +62,7 @@
 			 (with-cc (cont3)
 			   (= cc3 cont3)
 			   (cont3 (confirm "three")))
-			 4))
+			 4)
 	  (console > (log (cc1 > (to-string))))
 	  (cc1 "one-again")
 	  (// "this will call cont2 and cont3 again")
