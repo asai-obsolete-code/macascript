@@ -19,7 +19,7 @@
 	;; ((list* 'sentence sentence) (rewrite m-js-sentence sentence))
 	;; ((list* 'non-sentence sentence) (rewrite m-js-non-sentence sentence))
 
-	((list* 'funcall op args)	 (rewrite m-funcall op args))
+	((list* 'funcall op args)	 (rewrite m-function-call op args))
 	((list* '--- op (as chain-arguments (list* (list* _))))
 	 (rewrite m-chain-function-call op chain-arguments))
 
@@ -32,11 +32,6 @@
 	 (values (mapcar #'(lambda (scr) (m-compile env scr)) scripts) t 'list))
 	))
 
-(defmaca (m-chain-function-call :is-value t) (op chain-arguments)
-  `(glue (,op ,@(car chain-arguments))
-		 ,@(mapcar #'(lambda (args) `(paren (comma ,@args)))
-				   (cdr chain-arguments))))
-
 (defmaca (m-function-call :environment env :is-value t) (op args)
   (let (handlers actual-args value-args)
 	(loop for arg in args do
@@ -48,25 +43,32 @@
 			   (push value-arg value-args))
 			 (push arg actual-args)))
 	(if handlers
-		(let ((result 
-			   (with-set-temps-in-list 
-				   (env (reverse actual-args) temps)
-				 `(,op ,@temps))))
-		  (loop
-			 for arg in value-args
-			 for handler in (reverse handlers)
-			 do
-			   (setf result `(-> (,arg) ,result))
-			   (setf result `(--- ,handler (,result))))
-		  result)
+		(progn 
+		  (let ((result 
+				 (with-set-temps-in-list 
+					 (env (reverse actual-args) temps)
+				   `(glue ,op (paren (comma ,@temps))))))
+			(loop
+			   for arg in value-args
+			   for handler in (reverse handlers)
+			   do
+				 (setf result `(-> (,arg) ,result))
+			   do
+				 (setf result `(--- ,handler (,result))))
+			result))
 		(with-set-temps-in-list (env args temps)
 		  `(glue ,op (paren (comma ,@temps)))))))
+
+(defmaca (m-chain-function-call :is-value t) (op chain-arguments)
+  (if chain-arguments
+	  `(--- (funcall ,op ,@(car chain-arguments)) ,@(cdr chain-arguments))
+	  op))
 
 
 (defmaca (m-inline-function-call :environment env :return return-as)
 	(args lmb found-cl)
   (destructuring-bind (lambda-list . body) lmb
-	(let ((temps (mapcar #'(lambda (x) (declare (ignore x)) (gensym "tmp"))
+	(let ((temps (mapcar #'(lambda (x) (declare (ignore x)) (gensym "INLINE-TMP"))
 						 lambda-list))
 		  (copying-script nil))
 	  (loop

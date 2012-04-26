@@ -69,22 +69,20 @@
 ;; inherit functions
 
 (defmaca (m-inherit-this-function :is-value t) (args body)
-  (let ((this (gensym "t"))
-		(fn (gensym "f")))
+  (with-gensyms (this inherited-fn)
     (insert-initialization
 	 +cl+
      this 'this 
-     fn `(-> ,args ,@(subst this 'this body)))
-    fn))
+     inherited-fn `(-> ,args ,@(subst this 'this body)))
+    inherited-fn))
 
 (defmaca (m-inherit-this-procedure-function :is-value t) (args body)
-  (let ((this (gensym "t"))
-		(fn (gensym "f")))
+  (with-gensyms (this inherited-fn)
     (insert-initialization
 	 +cl+
      this 'this 
-     fn `(-/> ,args ,@(subst this 'this body)))
-    fn))
+     inherited-fn `(-/> ,args ,@(subst this 'this body)))
+    inherited-fn))
 
 
 ;; ----------------------------------------------------------------

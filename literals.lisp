@@ -66,16 +66,16 @@
 
 (defmaca (m-exist-accessor :return tmp
 						   :environment env) (obj accessor)
-  (let ((ref (gensym))
-		(child (car accessor)))
-	(if tmp
-		`(var ,tmp (,obj ? ,@accessor))
-		(with-set-temp env (obj child)
-		  `(? (!= (paren (= ,ref (,obj > ,child))) null)
-			  ,(if (cdr accessor)
-				   `(,ref . ,(cdr accessor))
-				   ref)
-			  (void 0))))))
+  (with-gensyms (exist-ref)
+	(let ((child (car accessor)))
+	  (if tmp
+		  `(var ,tmp (,obj ? ,@accessor))
+		  (with-set-temp env (obj child)
+			`(? (!= (paren (= ,exist-ref (,obj > ,child))) null)
+				,(if (cdr accessor)
+					 `(,exist-ref . ,(cdr accessor))
+					 exist-ref)
+				(void 0)))))))
 
 (defmaca m-prototype-accessor (obj accessor)
   `(,obj > prototype ,@(when accessor `( > ,@accessor))))

@@ -129,8 +129,8 @@ defined as a function)
 	  `(defmaca-builder ,name-or-name-and-options ,args ,body)))
 
 (defmacro defmaca-builder ((name &key
-								 (return (gensym "return"))
-								 (environment (gensym "e"))
+								 (return (gensym "RETURN"))
+								 (environment (gensym "ENV"))
 								 (is-value nil)
 								 (inherit-return-value nil))
 						   args body)

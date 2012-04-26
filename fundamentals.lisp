@@ -31,7 +31,8 @@
 						  args))))
 	(if tmp
 		`(var ,tmp ,body)
-		body)))
+		body)
+	))
 
 (defmaca (m-paren :is-value t) (arg)
   `(glue lparen ,arg rparen))
