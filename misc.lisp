@@ -19,6 +19,7 @@
 	;; ((list* 'sentence sentence) (rewrite m-js-sentence sentence))
 	;; ((list* 'non-sentence sentence) (rewrite m-js-non-sentence sentence))
 
+	((list* 'funcall op args)	 (rewrite m-funcall op args))
 	((list* '--- op (as chain-arguments (list* (list* _))))
 	 (rewrite m-chain-function-call op chain-arguments))
 

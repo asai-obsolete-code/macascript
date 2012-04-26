@@ -25,15 +25,24 @@
 ;; 
 
 (defmaca (m-global :environment env :is-value t) (body)
-  (compile-let* env 
-	  ((compiled-body `(sentences ,@body))
-	   (compiled-header 
-		(let ((vars (aif +variables+
-						 `(glue var space (comma ,@(uniquify it)))))
-			  (init (nreverse +initializations+)))
-		  (if (or vars init)
-			  `(sentences ,vars	,@init)))))
-	`(glue ,compiled-header ,compiled-body)))
+  (compile-let* env
+	  ((compiled-body body))
+	(declare (ignore compiled-body))
+	`(sentences ,@(aif +variables+
+					   `((glue var space (comma ,@(uniquify it)))))
+				,@(nreverse +initializations+)
+				,@body)))
+
+;; (defmaca (m-global :environment env :is-value t) (body)
+;;   (compile-let* env 
+;; 	  ((compiled-body `(sentences ,@body))
+;; 	   (compiled-header 
+;; 		(let ((vars (aif +variables+
+;; 						 `(glue var space (comma ,@(uniquify it)))))
+;; 			  (init (nreverse +initializations+)))
+;; 		  (if (or vars init)
+;; 			  `(sentences ,vars	,@init)))))
+;; 	`(glue ,compiled-header ,compiled-body)))
 
 ;; the most primitive javascript function
 (defmaca (m-procedure-function :environment env :is-value t) (args body)

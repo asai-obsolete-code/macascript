@@ -29,70 +29,72 @@
 
 ;; concept of call-cc
 
+;; deprecated
+;; (maca (var call-lambda
+;; 		 (-> (fn)
+;; 			 (fn > call this)))
+;; 	  (= (|Object| >> call-lambda)
+;; 		 call-lambda))
 
-(maca (var call-lambda
-		 (-> (fn)
-			 (fn > call this)))
-	  (= (|Object| >> call-lambda)
-		 call-lambda))
+(maca (var make-adder
+		   (-> (x)
+			   (-> (y)
+				   (+ x y))))
 
+	  (funcall (make-adder 3) 2)
+	  (funcall (make-adder 3) 2))
 
-(maca ((alert
-		(with-cc (cont)
-		  ($ > (get "http://google.com"
-					(-/> (xhr) (cont (xhr > responce-text)))))))))
+(maca (alert
+	   (with-cc (cont)
+		 ($ > (get "http://google.com"
+				   (-/> (xhr) (cont (xhr > responce-text))))))))
 
+(maca (var cc1)
+	  (var cc2)
+	  (var cc3)
+	  (alert (with-cc (cont1) 
+			   (= cc1 cont1)
+			   (cont1 (confirm "one")))
+			 (with-cc (cont2)
+			   (= cc2 cont2)
+			   (cont2 (confirm "two")))
+			 5
+			 (with-cc (cont3)
+			   (= cc3 cont3)
+			   (cont3 (confirm "three")))
+			 4))
+	  (console > (log (cc1 > (to-string))))
+	  (cc1 "one-again")
+	  (// "this will call cont2 and cont3 again")
+	  (console > (log (cc2 > (to-string))))
+	  (cc2 "two-again")
+	  (// "this will call cont3 again")
+	  (console > (log (cc3 > (to-string))))
+	  (cc3 "three-again")
+	  (// "this will call alert"))
 
-(maca (= (|Object| >> call-lambda)
-		 (-> (fn)
-			 (fn > call this)))
-	  (var call-lambda
-		 (-> (fn)
-			 (fn > call this))))
+(console > (log
+			(with-cc (cont1) 
+			  (= cc1 cont1)
+			  (cont1 (confirm "one")))
+			(with-cc (cont2)
+			  (= cc2 cont2)
+			  (cont2 (confirm "two")))
+			5
+			(with-cc (cont3)
+			  (= cc3 cont3)
+			  (cont3 (confirm "three")))
+			4))
 
-(maca ((var cc1)
-	   (var cc2)
-	   (var cc3)
-	   (alert (with-cc (cont1) 
-				(= cc1 cont1)
-				(cont1 (confirm "one")))
-			  (with-cc (cont2)
-				(= cc2 cont2)
-				(cont2 (confirm "two")))
-			  5
-			  (with-cc (cont3)
-				(= cc3 cont3)
-				(cont3 (confirm "three")))
-			  4)
-	   (console > (log (cc1 > (to-string))))
-	   (--- cc1 ("one-again") ("two-again") ("three-again"))
-	   (// "this will call cont2 and cont3 again")
-	   (console > (log (cc2 > (to-string))))
-	   (--- cc2  ("two-again") ("three-again"))
-	   (// "this will call cont3 again")
-	   (console > (log (cc3 > (to-string))))
-	   (--- cc3 ("three-again"))
-	   (// "this will call alert")))
-
-(maca ((alert (with-cc (cont1) 
-				(= cc1 cont1)
-				(cont1 (confirm "one")))
-			  (with-cc (cont2)
-				(= cc2 cont2)
-				(cont2 (confirm "two")))
-			  5
-			  (with-cc (cont3)
-				(= cc3 cont3)
-				(cont3 (confirm "three")))
-			  4)))
-
-(maca (alert (with-cc (cont1) 
-				(= cc1 cont1)
-				(cont1 (confirm "one")))))
-
-(maca ((alert (with-cc (cont1) 
-				(= cc1 cont1)
-				(cont1 (confirm "one")))
-			  (with-cc (cont2)
-				(= cc2 cont2)
-				(cont2 (confirm "two"))))))
+(funcall (console > log)
+		 (with-cc (cont1) 
+		   (= cc1 cont1)
+		   (cont1 (confirm "one")))
+		 (with-cc (cont2)
+		   (= cc2 cont2)
+		   (cont2 (confirm "two")))
+		 5
+		 (with-cc (cont3)
+		   (= cc3 cont3)
+		   (cont3 (confirm "three")))
+		 4)
