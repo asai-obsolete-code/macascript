@@ -49,12 +49,13 @@
   `(glue lbrace
 		 (// ,(format nil "indentation level: ~a"
 					  (env-indents env)))
-		 (newline-and-indent)
 		 ,@(let (contents)
 				(incf (closure-indentation (car env)))
-				(setf contents (m-compile env `(sentences ,@arg)))
+				(setf contents
+					  (m-compile env `(sentences ,@arg)))
 				(decf (closure-indentation (car env)))
 				contents)
+		 (newline-and-indent)
 		 rbrace
 		 (newline-and-indent)))
 

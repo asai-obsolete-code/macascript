@@ -119,8 +119,6 @@
 
 ;; conditional expression
 
-(maca (return (if (> a b) a b)))
-
 (maca (-/> ()
 		   ((if (> a b) a b)
 			> '(if (> c d) c d)

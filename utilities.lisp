@@ -41,9 +41,6 @@
       (list arg)
       arg))
 
-
-
-
 (defmacro with-set-temp (env scripts &body body)
   (let ((binds (mapcar #'(lambda (script)
 						   (cons script (gensym "BINDING")))

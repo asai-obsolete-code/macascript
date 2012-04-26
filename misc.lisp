@@ -81,16 +81,19 @@
 		 do (setf body (subst temp param body))
 		 do (push temp (closure-variables found-cl))
 		 do (push `(= ,temp ,arg) copying-script))
-	  ;;(break "~a" return-as)
+	  (print body)
+	  (print (1-or-2-line-set-temp body return-as))
 	  (if return-as 
-		  `(sentences ,@copying-script
-					  ,@(1-or-2-line-set-temp body return-as))
-		  (with-set-temp env (body) body)))))
+		  `(glue (sentences ,@copying-script
+							,@(1-or-2-line-set-temp body return-as))
+				 (newline-and-indent))
+		  (with-set-temp env (body)
+			body)))))
 
 (defmaca (m-sentence :environment env) (sent)
   (compile-let* env ((compiled-sent sent))
-	(if compiled-sent
-		`(glue ,sent semicolon (newline-and-indent))
+	(if compiled-sent					;non-nil
+		`(glue (newline-and-indent) ,sent semicolon)
 		`(glue ,sent))))
 
 (defmaca m-sentences (sents)
