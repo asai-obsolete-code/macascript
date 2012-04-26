@@ -92,7 +92,6 @@
 
 (defmaca (m-sentence :environment env) (sent)
   (compile-let* env ((compiled-sent sent))
-;	(break "~a~%~a" compiled-sent env)
 	(if compiled-sent
 		`(glue ,sent semicolon (newline-and-indent))
 		`(glue ,sent))))
