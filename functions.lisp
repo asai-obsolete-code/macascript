@@ -4,7 +4,7 @@
 ;; function and function calls
 
 (defparameter *functions*
-  '(((list 'global sentences)          (rewrite m-global sentences))
+  '(((list* 'global sentences)          (rewrite m-global sentences))
 	((list* 'function name (as type (or '-> '-/>)) (list* args) body)
 	 (rewrite m-function-declaration name type args body))
 	((list* '-> (list* args) body)      (rewrite m-function args body))
@@ -26,39 +26,36 @@
 
 (defmaca (m-global :environment env :is-value t) (body)
   (compile-let* env 
-	  ((compiled-body body)
-	   (compiled-header `(glue ,(aif +variables+ `((glue var space (comma ,@(uniquify it)))))
-									(,@(nreverse +initializations+)))))
-	`(compiled ,compiled-header ,compiled-body)))
+	  ((compiled-body `(sentences ,@body))
+	   (compiled-header 
+		(let ((vars (aif +variables+
+						 `(glue var space (comma ,@(uniquify it)))))
+			  (init (nreverse +initializations+)))
+		  (if (or vars init)
+			  `(sentences ,vars	,@init)))))
+	`(glue ,compiled-header ,compiled-body)))
 
-(defmaca (m-function :environment env :is-value t) (args body)
+;; the most primitive javascript function
+(defmaca (m-procedure-function :environment env :is-value t) (args body)
   (check-args args
-	(compile-let* env ((func-header `(glue function (paren (comma ,@args)))))
+	(compile-let* env
+		((func-header `(glue function (paren (comma ,@args)))))
 	  (let* ((cl (make-closure :arguments args))
 			 (new-env (cons cl env)))
 		(compile-let* new-env
-			((compiled-body
-			  (with-indent new-env
-				`(,@(butlast body) (return ,@(last body)))))
+			((compiled-body body)
 			 (compiled-header
-			  (with-indent new-env
-				`(glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
-					   ,(nreverse (closure-initializations cl))))))
-		  `(glue ,func-header (blk (,@compiled-header ,@compiled-body))))))))
+			  `(,@(aif (closure-variables cl)
+					   `((glue var space (comma ,@(uniquify it)))))
+				  ,@(nreverse (closure-initializations cl)))))
+		  `(glue ,func-header
+				 (blk (,@compiled-header
+					   ,@compiled-body))))))))
 
-
-(defmaca (m-procedure-function :environment env :is-value t) (args body)
-  (check-args args
-	(compile-let* env ((func-header `(glue function (paren (comma ,@args)))))
-	  (let* ((cl (make-closure :arguments args))
-			 (new-env (cons cl env)))
-		(compile-let* (cons cl env)
-			((compiled-body (with-indent new-env body))
-			 (compiled-header
-			  (with-indent new-env
-				`(glue ,(aif (closure-variables cl) `((glue var space (comma ,@(uniquify it)))))
-					   ,(nreverse (closure-initializations cl))))))
-		  `(glue ,func-header (blk (,@compiled-header ,@compiled-body))))))))
+(defmaca (m-function :is-value t) (args body)
+  `(-/> ,args
+		,(butlast body)
+		(return ,(car (last body)))))
 
 ;; ----------------------------------------------------------------
 ;; inherit functions

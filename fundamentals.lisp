@@ -6,14 +6,15 @@
 ;; these operators are just meant to be used by the compiler
 ;; don't use it
 (defparameter *fundamentals*
-  '(((list* 'compiled clauses)          (values lst t 'compiled))
+  '(((list) (values nil t 'null))
+	((list* 'compiled clauses)          (values lst t 'compiled))
 	((list* 'glue clauses)              (rewrite m-glue clauses))
 	((list 'paren clause)               (rewrite m-paren clause))
 	((list 'stringify clause)           (rewrite m-stringify clause))
 	((list 'bracket clause)             (rewrite m-bracket clause))
 	((list* 'comma clauses)             (rewrite m-comma clauses))
-	((list 'blk clause)                 (rewrite m-block clause))
-	((list '// str)                     (rewrite m-comment str))))
+	((list '// str)                     (rewrite m-comment str))
+	((list 'blk clause)                 (rewrite m-block clause))))
 
 (defmaca (m-glue :environment env :return tmp :is-value t) (args)
   (let ((body `(compiled 
@@ -32,7 +33,6 @@
 		`(var ,tmp ,body)
 		body)))
 
-
 (defmaca (m-paren :is-value t) (arg)
   `(glue lparen ,arg rparen))
 
@@ -42,19 +42,22 @@
 (defmaca (m-bracket :is-value t) (arg)
   `(glue lbracket ,arg rbracket))
 
-(defmacro with-indent (env &body body)
-  (with-gensyms (contents)
-	`(let ((,contents nil))
-	   (incf *indentation*)
-	   (setf ,contents (m-compile ,env (progn ,@body)))
-	   (decf *indentation*)
-	   ,contents)))
-
 (defmaca (m-block :environment env) (arg)
   `(glue lbrace
-		 ,(with-indent env arg)
+		 (// ,(format nil "indentation level: ~a"
+					  (env-indents env)))
+		 ,@(let (contents)
+				(incf (closure-indentation (car env)))
+				(format t "increasing indentation: ~a~%processing:~%~a~%"
+						(closure-indentation (car env)) arg)
+				(setf contents (m-compile env `(sentences ,@arg)))
+				(decf (closure-indentation (car env)))
+				(format t "decreasing indentation.~%")
+				contents)
 		 (newline-and-indent)
-		 rbrace))
+		 rbrace
+		 (// ,(format nil "end of indentation level: ~a"
+					  (env-indents env)))))
 
 (defmaca (m-comma :is-value t) (args)
   `(glue ,@(mapcan
@@ -64,3 +67,6 @@
 
 (defmaca (m-comment :is-value t) (string)
   `(compiled ,(format nil "~t/* ~a */~%" string)))
+
+;; (defmaca (m-lisp :is-value t) (codes)
+;;   (eval codes)

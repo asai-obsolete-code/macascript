@@ -73,3 +73,26 @@
 	   (console > (log (cc3 > (to-string))))
 	   (--- cc3 ("three-again"))
 	   (// "this will call alert")))
+
+(maca ((alert (with-cc (cont1) 
+				(= cc1 cont1)
+				(cont1 (confirm "one")))
+			  (with-cc (cont2)
+				(= cc2 cont2)
+				(cont2 (confirm "two")))
+			  5
+			  (with-cc (cont3)
+				(= cc3 cont3)
+				(cont3 (confirm "three")))
+			  4)))
+
+(maca (alert (with-cc (cont1) 
+				(= cc1 cont1)
+				(cont1 (confirm "one")))))
+
+(maca ((alert (with-cc (cont1) 
+				(= cc1 cont1)
+				(cont1 (confirm "one")))
+			  (with-cc (cont2)
+				(= cc2 cont2)
+				(cont2 (confirm "two"))))))

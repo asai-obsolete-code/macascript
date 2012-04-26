@@ -23,6 +23,7 @@
 ;; constants
 (maca undefined)
 (maca t)
+(maca t a "string")
 
 ;; assignments
 (maca (= number 3))
@@ -49,6 +50,7 @@
 
 ;; assignments
 
+(maca (var a 3))
 (maca (= a 3))
 (maca (= a (a > b > v)))
 (maca (a > b > v))
@@ -60,7 +62,7 @@
 (maca (>= 5 3 4))
 
 ;; mono-ops
-(maca (new (|Number|)))
+(maca (new -number))
 (maca (typeof 5))
 
 ;; in
@@ -80,16 +82,16 @@
 		  (var e 2)
 		  (+ a b c d e)))
 
-(maca (-> (a)
-		  (alert a)
-		  (-> (b)
-			  (if (< b 3)
-				  ((var a (- 3 b))
-				   (= b (expr a 5)))
-				  ((var a (- b 3))))
-			  (var c (+ a 3))
-			  (alert a b)
-			  a)))
+(maca (-/> (a)
+		   (alert a)
+		   (-/> (b)
+				(if (< b 3)
+					((var a (- 3 b))
+					 (= b (expr a 5)))
+					((var a (- b 3))))
+				(var c (+ a 3))
+				(alert a b)
+				a)))
 
 ;; procedure function: returns undefined
 (maca (-/> (a b c)

@@ -1,6 +1,8 @@
 
 (in-package :maca)
 
+;; test whether a list is unique 
+
 (defun uniquify (lst &key (test #'eq))
   (labels ((rec (unique rest)
 			 (if rest
@@ -23,6 +25,8 @@
 (defun uniquep (lst &key (test #'eq))
   (not (not-uniquep lst :test test)))
 
+
+
 (defun atom-or-op (arg)
   (or (atom arg) (atom (car arg))))
 
@@ -36,6 +40,8 @@
   (if (atom-or-op arg)
       (list arg)
       arg))
+
+
 
 
 (defmacro with-set-temp (env scripts &body body)
@@ -70,8 +76,8 @@
 				  args)
 	 ,@body))
 
-
 (defun insert-initialization (cl &rest var-val-plist)
+  "helper function for inserting initialization of variables."
   (labels ((rec (plist)
 			 (let ((var (car plist))
 				   (val (cadr plist)))
@@ -110,3 +116,8 @@
 		 (appendf +variables+ ,var-list)
 		 `(glue ,@,compiled-args
 				,,@body)))))
+
+(defun env-args (env)
+  (loop for cl in env collect (closure-variables cl)))
+(defun env-indents (env)
+  (loop for cl in env sum (closure-indentation cl)))

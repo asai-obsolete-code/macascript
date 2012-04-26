@@ -65,8 +65,6 @@
 (defparameter *miscellaneous* nil)
 (defparameter *functions* nil)
 
-(defparameter *indentation* 0)
-
 ;; core macros
 
 (defun show-patterns ()
@@ -80,12 +78,31 @@
 		  *customs*
 		  *miscellaneous*))
 
-(defstruct closure
-  (arguments nil)
-  (variables nil)
+(defstruct closure "this represents the current top-level closure in
+the currently processing javascript context.
+
+arguments :: not currently used.
+
+variables :: list of symbols. Variables declared with 'var' are stored
+in this list.
+
+initializations :: list of assignment script. When a variable is
+declared with 'var' and it has the initialization argument, then the
+assignment script will bepushed into this list.
+
+inline-lambda :: list of maca lambda lists. When an inline-function is
+defined, the lambda list will be stored here.
+
+function-lambda :: not currently used. (meant to store which keyword is 
+defined as a function)
+
+"
+  (arguments nil)						; unused now
+  (variables nil)						;
   (initializations nil)
   (inline-lambda nil)
-  (function-lambda nil))
+  (function-lambda nil)					; unused now
+  (indentation 0))
 
 (defmacro recompile ()
   `(defun m-compile (env lst &key return)
@@ -126,7 +143,8 @@
 		   (with-slots ((+variables+ variables)
 						(+initializations+ initializations)
 						(+inline-lambda+ inline-lambda)
-						(+arguments+ arguments)) +cl+
+						(+arguments+ arguments)
+						(+function-lambda+ function-lambda)) +cl+
 			 (multiple-value-bind (,definition
 								   ,is-value-option)
 				 (progn ,@body)
@@ -163,14 +181,15 @@
 									   (mapcar #'string-capitalize
 											   (cdr chunks))))))
 						  (t token))))
-				  (remove 'compiled (flatten value)))))
+				  (remove 'compiled
+						  (flatten value)))))
 
 (defmacro maca-compile (&body body)
   `(progn 
-	(setf *indentation* 0)
-	,(if (typep (car body) 'atom)
-		`(m-compile (list (make-closure)) ',@body)
-		`(m-compile (list (make-closure)) '(global (,@body))))))
+	 ;;(setf *indentation* 0)
+	,(if (every (of-type 'atom) body)
+		`(m-compile (list (make-closure)) '(comma ,@body))
+		`(m-compile (list (make-closure)) '(global ,@body)))))
 
 (defmacro maca (&body script)
   `(maca-format (maca-compile ,@script)))

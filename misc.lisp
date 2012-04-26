@@ -1,6 +1,4 @@
 (in-package :maca)
-
-
 (defun indents (n)
   (loop for i below n collect 'indent))
 
@@ -10,15 +8,18 @@
 	 (values `(compiled ,(format nil "\"~a\"" str)) t 'string))
 	((list 'newline-and-indent)
 	 (values
-	  `(compiled newline ,@(indents *indentation*))
+	  `(compiled newline ,@(indents (env-indents env)))
 	  t 'newline-and-indent))
+	
+	((list 'sentence sentence) (rewrite m-sentence sentence))
+	((list* 'sentences sentences) (rewrite m-sentences sentences))
 	((type atom val) 
 	 (values (m-compile env `(glue ,val)) t 'atom))
 
 	;; ((list* 'sentence sentence) (rewrite m-js-sentence sentence))
 	;; ((list* 'non-sentence sentence) (rewrite m-js-non-sentence sentence))
 
-	((list* '--- (type atom op) (as chain-arguments (list* (list* _))))
+	((list* '--- op (as chain-arguments (list* (list* _))))
 	 (rewrite m-chain-function-call op chain-arguments))
 
 	((list* (type atom op) arguments)
@@ -26,20 +27,9 @@
 	   (if lmb
 		   (rewrite m-inline-function-call arguments lmb found-cl)
 		   (rewrite m-function-call op arguments))))
-
-
-	((list) (values nil t 'null))
-	((list* sentences) (rewrite m-sentences sentences))))
-
-;; this is currently necessary for with-cc operation
-;;   (this will be fixed in the future improvement)
-
-;; (maca (= (|Object| >> call-lambda)
-;; 		 (-> (fn)
-;; 			 (fn > call this)))
-;; 	  (var call-lambda
-;; 		 (-> (fn)
-;; 			 (fn > call this))))
+	((list* scripts) 
+	 (values (mapcar #'(lambda (scr) (m-compile env scr)) scripts) t 'list))
+	))
 
 (defmaca (m-chain-function-call :is-value t) (op chain-arguments)
   `(glue (,op ,@(car chain-arguments))
@@ -61,13 +51,12 @@
 			   (with-set-temps-in-list 
 				   (env (reverse actual-args) temps)
 				 `(,op ,@temps))))
-		  (loop for arg in value-args do
-			   (setf result `(-> (,arg) ,result)))
-		  (loop for handler in (reverse handlers) do
-			   (setf result 
-					 `(paren (glue
-							  (paren ,handler)
-							  (paren ,result)))))
+		  (loop
+			 for arg in value-args
+			 for handler in (reverse handlers)
+			 do
+			   (setf result `(-> (,arg) ,result))
+			   (setf result `(--- ,handler (,result))))
 		  result)
 		(with-set-temps-in-list (env args temps)
 		  `(glue ,op (paren (comma ,@temps)))))))
@@ -95,18 +84,17 @@
 (defparameter *non-sentence-ops*
   '(var if for switch while do))
 
-;; (defmaca m-js-sentence (sent)
-;;   `(glue (newline-and-indent) ,sent semicolon))
-;; (defmaca m-js-non-sentence (sents)
-;;   `(glue (newline-and-indent) ,sent))
+(defmaca (m-sentence :environment env) (sent)
+  (compile-let* env ((compiled-sent sent))
+;	(break "~a~%~a" compiled-sent env)
+	(if compiled-sent
+		`(glue (newline-and-indent) ,sent semicolon)
+		`(glue ,sent))))
+
 (defmaca m-sentences (sents)
   `(glue ,@(mapcar
-			#'(lambda (sent)
-				(if (eq (car sent) 'var)
-					sent
-					`(glue (newline-and-indent) ,sent semicolon)))
+			#'(lambda (sent) `(sentence ,sent))
 			sents)))
-  ;; `(glue ,@sents))
 
 (recompile)
 (setf *recompile-compiler* t)
