@@ -81,8 +81,6 @@
 		 do (setf body (subst temp param body))
 		 do (push temp (closure-variables found-cl))
 		 do (push `(= ,temp ,arg) copying-script))
-	  (print body)
-	  (print (1-or-2-line-set-temp body return-as))
 	  (if return-as 
 		  `(glue (sentences ,@copying-script
 							,@(1-or-2-line-set-temp body return-as))
