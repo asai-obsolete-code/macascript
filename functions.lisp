@@ -42,15 +42,14 @@
 		((func-header `(glue function (paren (comma ,@args)))))
 	  (let* ((cl (make-closure :arguments args))
 			 (new-env (cons cl env)))
-		(compile-let* new-env
-			((compiled-body body)
-			 (compiled-header
-			  `(,@(aif (closure-variables cl)
-					   `((glue var space (comma ,@(uniquify it)))))
-				  ,@(nreverse (closure-initializations cl)))))
+		;; search/push the variables 
+		(compile-let* new-env ((compiled-body body))
+		  (declare (ignore compiled-body))
 		  `(glue ,func-header
-				 (blk (,@compiled-header
-					   ,@compiled-body))))))))
+				 (blk (,@(aif (closure-variables cl)
+							  `((glue var space (comma ,@(uniquify it)))))
+					   ,@(nreverse (closure-initializations cl))
+					   ,@body))))))))
 
 (defmaca (m-function :is-value t) (args body)
   `(-/> ,args

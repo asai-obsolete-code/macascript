@@ -48,16 +48,11 @@
 					  (env-indents env)))
 		 ,@(let (contents)
 				(incf (closure-indentation (car env)))
-				(format t "increasing indentation: ~a~%processing:~%~a~%"
-						(closure-indentation (car env)) arg)
 				(setf contents (m-compile env `(sentences ,@arg)))
 				(decf (closure-indentation (car env)))
-				(format t "decreasing indentation.~%")
 				contents)
 		 (newline-and-indent)
-		 rbrace
-		 (// ,(format nil "end of indentation level: ~a"
-					  (env-indents env)))))
+		 rbrace))
 
 (defmaca (m-comma :is-value t) (args)
   `(glue ,@(mapcan
@@ -66,7 +61,4 @@
 		 ,@(last args)))
 
 (defmaca (m-comment :is-value t) (string)
-  `(compiled ,(format nil "~t/* ~a */~%" string)))
-
-;; (defmaca (m-lisp :is-value t) (codes)
-;;   (eval codes)
+  `(compiled ,(format nil "~t/* ~a */" string)))
