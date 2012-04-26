@@ -87,9 +87,6 @@
 					  ,@(1-or-2-line-set-temp body return-as))
 		  (with-set-temp env (body) body)))))
 
-(defparameter *non-sentence-ops*
-  '(var if for switch while do))
-
 (defmaca (m-sentence :environment env) (sent)
   (compile-let* env ((compiled-sent sent))
 	(if compiled-sent
