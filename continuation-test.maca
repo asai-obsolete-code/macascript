@@ -40,7 +40,7 @@
 				   (+ x y))))
 
 	  (funcall (make-adder 3) 2)
-	  (funcall (make-adder 3) 2))
+	  (--- make-adder (3) (2)))
 
 (defun continuation ()
 

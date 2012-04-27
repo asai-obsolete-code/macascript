@@ -54,7 +54,7 @@
 			   do
 				 (setf result `(-> (,arg) ,result))
 			   do
-				 (setf result `(--- ,handler (,result))))
+				 (setf result `(--- (paren ,handler) (,result))))
 			result))
 		(with-set-temps-in-list (env args temps)
 		  `(glue ,op (paren (comma ,@temps)))))))
