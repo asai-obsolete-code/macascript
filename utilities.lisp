@@ -41,7 +41,12 @@
       (list arg)
       arg))
 
-(defmacro with-set-temp (env scripts &body body)
+(defmacro with-set-temp (env (&rest scripts) &body body)
+  "search the arguments in args for a non-value statement,
+ convert it to assign the value of the statement to a temporary variable,
+ then finally put the variable where the statement used to be.
+ this will ease the effort of converting any non-value statement
+ like js' if, switch, while into the returnable, assignable statement."
   (let ((binds (mapcar #'(lambda (script)
 						   (cons script (gensym "BINDING")))
 					   scripts)))
@@ -54,6 +59,7 @@
 				   `(with-gensyms (setter-temp)
 					  (multiple-value-bind (compiled is-value type)
 						  (m-compile ,env ,script :return setter-temp)
+						(declare (ignorable type))
 						(if is-value 
 							(progn
 							  (setf ,compiled-script-slot compiled)
@@ -94,6 +100,11 @@
       (values nil nil)))
 
 (defmacro with-set-temps-in-list ((env lst temps-name) &body body)
+  "search the arguments in args for a non-value statement,
+ convert it to assign the value of the statement to a temporary variable,
+ then finally put the variable where the statement used to be.
+ this will ease the effort of converting any non-value statement
+ like js' if, switch, while into the returnable, assignable statement."
   (with-gensyms (temp-syms body-args compiled-args var-list)
 	`(let* ((,temp-syms
 			 (mapcar #'(lambda (arg)
@@ -105,6 +116,7 @@
 			 (mapcar #'(lambda (arg argtmp)
 						 (multiple-value-bind (compiled is-value type)
 							 (m-compile ,env arg :return argtmp)
+						   (declare (ignorable type))
 ;; (break "arg: ~a~%compiled: ~a~%return-as: ~a~%is-value: ~a~%type: ~a"
 ;; 		  arg compiled argtmp is-value type)
 						   (if is-value 
@@ -122,3 +134,31 @@
   (loop for cl in env collect (closure-variables cl)))
 (defun env-indents (env)
   (loop for cl in env sum (closure-indentation cl)))
+
+
+(defmacro with-check-cc ((args) &body body)
+"search the arguments in args for with/cc and
+ convert it to the continuation call."
+  (with-gensyms (handlers actual-args value-args)
+	(let ((body-inner (subst `(reverse ,actual-args) args body)))
+	  `(let (,handlers ,actual-args ,value-args)
+		 (loop for arg in ,args do
+			  (if (and (typep arg 'list)
+					   (eq (car arg) 'with-cc))
+				  (with-gensyms (value-arg)
+					(push (m-compile env arg) ,handlers)
+					(push value-arg ,actual-args)
+					(push value-arg ,value-args))
+				  (push arg ,actual-args)))
+		 (if ,handlers
+			 (progn 
+			   (let ((result ,@body-inner))
+				 (loop
+					for arg in ,value-args
+					for handler in (reverse ,handlers)
+					do
+					  (setf result `(-> (,arg) ,result))
+					do
+					  (setf result `(--- (paren ,handler) (,result))))
+				 result))
+			 ,@body)))))

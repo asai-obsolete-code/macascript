@@ -134,7 +134,7 @@ defined as a function)
 								 (is-value nil)
 								 (inherit-return-value nil))
 						   args body)
-  (declare (ignorable return))
+  (declare (ignorable return is-value))
   (with-gensyms (definition is-value-option)
     `(progn
 	   (defun ,name (,environment ,return ,@args)
@@ -148,6 +148,7 @@ defined as a function)
 			 (multiple-value-bind (,definition
 								   ,is-value-option)
 				 (progn ,@body)
+			   (declare (ignorable ,is-value-option))
 			   (values (m-compile ,environment ,definition
 								  ,@(if inherit-return-value
 										`(:return ,return)

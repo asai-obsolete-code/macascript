@@ -319,7 +319,6 @@ alert(argName3416);
 
 #+BEGIN_SRC lisp
 (defun continuation ()
-
   (maca (alert
 		 (with-cc (cont)
 		   ($ > (get "http://google.com"
@@ -327,95 +326,96 @@ alert(argName3416);
 
 		(var cc1)
 		(var cc2)
-		(var cc3)
 		(alert (with-cc (cont1) 
 				 (= cc1 cont1)
 				 (cont1 (confirm "one")))
+			   2
 			   (with-cc (cont2)
 				 (= cc2 cont2)
-				 (cont2 (confirm "two")))
-			   5
-			   (with-cc (cont3)
-				 (= cc3 cont3)
-				 (cont3 (confirm "three")))
-			   4)
+				 (cont2 (confirm "two"))))
 		(console > (log (cc1 > (to-string))))
-		(cc1 "one-again")
-		(// "this will call cont2 and cont3 again")
+		(cc1 "one-again") (// "this will call cont2 again")
+
 		(console > (log (cc2 > (to-string))))
 		(cc2 "two-again")
-		(// "this will call cont3 again")
-		(console > (log (cc3 > (to-string))))
-		(cc3 "three-again")
-		(// "this will call alert")
 
+		(// "if you want to use continuation for a method, do like this:")
 		(funcall (console > log)
 				 (with-cc (cont1) 
 				   (= cc1 cont1)
 				   (cont1 (confirm "one")))
 				 (with-cc (cont2)
 				   (= cc2 cont2)
-				   (cont2 (confirm "two"))))))
+				   (cont2 (confirm "two")))))
+
+  ;; now you can use continuation with the infix operators.
+  (maca (var cc)
+	    (alert (+ 1 (with-cc (cont)
+					  (= cc cont)
+					  (cont 2))
+				  3))
+		(alert (cc 5))))
 #+END_SRC
 
 #+BEGIN_SRC js
-var cc1,cc2,cc3;
-function(cont){ /* indentation level: 0 */
+var cc1,cc2;
+(function(cont){ /* indentation level: 0 */
 	return $.get("http://google.com",function(xhr){ /* indentation level: 1 */
 		cont(xhr.responceText);
 	}
 	);
 }
-(function(valueArg3773){ /* indentation level: 0 */
-	return alert(valueArg3773);
+)(function(valueArg2207){ /* indentation level: 0 */
+	return alert(valueArg2207);
 }
 );
-function(cont3){ /* indentation level: 0 */
-	cc3 = cont3;
-	return cont3(confirm("three"));
-}
-(function(valueArg3944){ /* indentation level: 0 */
-	return function(cont2){ /* indentation level: 0 */
+(function(cont2){ /* indentation level: 0 */
 	cc2 = cont2;
 	return cont2(confirm("two"));
 }
-(function(valueArg3957){ /* indentation level: 1 */
-		return function(cont1){ /* indentation level: 0 */
+)(function(valueArg2318){ /* indentation level: 0 */
+	return (function(cont1){ /* indentation level: 0 */
 	cc1 = cont1;
 	return cont1(confirm("one"));
 }
-(function(valueArg3970){ /* indentation level: 2 */
-			return alert(valueArg3944,valueArg3957,5,valueArg3970,4);
-		}
-		);
+)(function(valueArg2331){ /* indentation level: 1 */
+		return alert(valueArg2318,2,valueArg2331);
 	}
 	);
 }
 );
 console.log(cc1.toString());
 cc1("one-again");
- /* this will call cont2 and cont3 again */;
+ /* this will call cont2 again */;
 console.log(cc2.toString());
 cc2("two-again");
- /* this will call cont3 again */;
-console.log(cc3.toString());
-cc3("three-again");
- /* this will call alert */;
-function(cont2){ /* indentation level: 0 */
+ /* if you want to use continuation for a method, do like this: */;
+(function(cont2){ /* indentation level: 0 */
 	cc2 = cont2;
 	return cont2(confirm("two"));
 }
-(function(valueArg4146){ /* indentation level: 0 */
-	return function(cont1){ /* indentation level: 0 */
+)(function(valueArg2448){ /* indentation level: 0 */
+	return (function(cont1){ /* indentation level: 0 */
 	cc1 = cont1;
 	return cont1(confirm("one"));
 }
-(function(valueArg4159){ /* indentation level: 1 */
-		return console.log(valueArg4146,valueArg4159);
+)(function(valueArg2461){ /* indentation level: 1 */
+		return console.log(valueArg2448,valueArg2461);
 	}
 	);
 }
 );
+
+var cc;
+alert((function(cont){ /* indentation level: 0 */
+	cc = cont;
+	return cont(2);
+}
+)(function(valueArg2554){ /* indentation level: 0 */
+	return (1 + (valueArg2554 + 3));
+}
+));
+alert(cc(5));
 #+END_SRC
 
 ** other supported syntaxes

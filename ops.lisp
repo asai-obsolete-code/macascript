@@ -32,25 +32,27 @@
   '(+ - * / % << >> >>> in && |\|\|| and or))
 
 (defmaca (m-infix :environment env :is-value t) (op vars)
-  (let ((arg1 (car vars))
-		(arg2 (cadr vars)))
-	(if (third vars)
-		(with-set-temp env (arg1)
-		  `(paren (glue ,arg1 space ,op space (,op ,@(cdr vars)))))
-		(with-set-temp env (arg1 arg2)
-		  `(paren (glue ,arg1 space ,op space ,arg2))))))
+  (with-check-cc (vars)
+	(let ((arg1 (car vars))
+		  (arg2 (cadr vars)))
+	  (if (third vars)
+		  (with-set-temp env (arg1)
+			`(paren (glue ,arg1 space ,op space (,op ,@(cdr vars)))))
+		  (with-set-temp env (arg1 arg2)
+			`(paren (glue ,arg1 space ,op space ,arg2)))))))
 
 (defparameter *comparisons* 
   '(== != === !== > < >= <=))
 
 (defmaca (m-comparison :environment env :is-value t) (op vars)
-  (let ((arg1 (car vars))
-		(arg2 (cadr vars)))
-	(if (third vars)
-		(with-set-temp env (arg1 arg2)
+  (with-check-cc (vars)
+	(let ((arg1 (car vars))
+		  (arg2 (cadr vars)))
+	  (if (third vars)
+		  (with-set-temp env (arg1 arg2)
 		  `(glue (paren (glue ,arg1 ,op ,arg2)) && (,op ,arg2 ,@(cddr vars))))
-		(with-set-temp env (arg2)
-		  `(paren (glue ,arg1 ,op ,arg2))))))
+		  (with-set-temp env (arg2)
+			`(paren (glue ,arg1 ,op ,arg2)))))))
 
 (defparameter *mono-ops*
   '(++ -- ^ ~ ! not

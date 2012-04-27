@@ -43,7 +43,6 @@
 	  (--- make-adder (3) (2)))
 
 (defun continuation ()
-
   (maca (alert
 		 (with-cc (cont)
 		   ($ > (get "http://google.com"
@@ -51,32 +50,32 @@
 
 		(var cc1)
 		(var cc2)
-		(var cc3)
 		(alert (with-cc (cont1) 
 				 (= cc1 cont1)
 				 (cont1 (confirm "one")))
+			   2
 			   (with-cc (cont2)
 				 (= cc2 cont2)
-				 (cont2 (confirm "two")))
-			   5
-			   (with-cc (cont3)
-				 (= cc3 cont3)
-				 (cont3 (confirm "three")))
-			   4)
+				 (cont2 (confirm "two"))))
 		(console > (log (cc1 > (to-string))))
-		(cc1 "one-again")
-		(// "this will call cont2 and cont3 again")
+		(cc1 "one-again") (// "this will call cont2 again")
+
 		(console > (log (cc2 > (to-string))))
 		(cc2 "two-again")
-		(// "this will call cont3 again")
-		(console > (log (cc3 > (to-string))))
-		(cc3 "three-again")
-		(// "this will call alert")
 
+		(// "if you want to use continuation for a method, do like this:")
 		(funcall (console > log)
 				 (with-cc (cont1) 
 				   (= cc1 cont1)
 				   (cont1 (confirm "one")))
 				 (with-cc (cont2)
 				   (= cc2 cont2)
-				   (cont2 (confirm "two")))))) 
+				   (cont2 (confirm "two")))))
+
+  ;; now you can use continuation with the infix operators.
+  (maca (var cc)
+	    (alert (+ 1 (with-cc (cont)
+					  (= cc cont)
+					  (cont 2))
+				  3))
+		(alert (cc 5))))

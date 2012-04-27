@@ -7,7 +7,7 @@ lang="ja" xml:lang="ja">
 <title>Yet another Javascript compiler Macascript</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-04-12 22:58:53 JST"/>
+<meta name="generated" content="2012-04-27 11:44:11 JST"/>
 <meta name="author" content="浅井　政太郎 (Masataro Asai from Univ. of Tokyo)"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -115,10 +115,12 @@ org_html_manager.setup();  // activate after the parameters are set
 <li><a href="#sec-4">4 Examples </a>
 <ul>
 <li><a href="#sec-4-1">4.1 Fundamentals </a></li>
-<li><a href="#sec-4-2">4.2 Procedure/Inline/Inherit-this function </a></li>
-<li><a href="#sec-4-3">4.3 Call/cc </a></li>
-<li><a href="#sec-4-4">4.4 other supported syntaxes </a></li>
-<li><a href="#sec-4-5">4.5 Using defmaca to define a new syntax </a></li>
+<li><a href="#sec-4-2">4.2 Assignments </a></li>
+<li><a href="#sec-4-3">4.3 Operaters </a></li>
+<li><a href="#sec-4-4">4.4 Procedure/Inline/Inherit-this function </a></li>
+<li><a href="#sec-4-5">4.5 Call/cc </a></li>
+<li><a href="#sec-4-6">4.6 other supported syntaxes </a></li>
+<li><a href="#sec-4-7">4.7 Using defmaca to define a new syntax </a></li>
 </ul>
 </li>
 <li><a href="#sec-5">5 Motivation </a></li>
@@ -289,33 +291,27 @@ so open the REPL in the repository and input these code to the interpreter:
 
 
 
-<pre class="example">(maca (-&gt; (a)
-          (if (a b c)                   ;multi-line then/else
-              ((var d (+ a b c))        ;infix argument and var declaration
-               (var e (== a b c d)))                  ; multiple comparison
-              ((var f '(a (b c) (+ 1 2 3)))           ; array literal
-               (var g (:a a :b (b c) :c (+ 1 2 3))))) ; object literal
-          ;; true if it's not undefined
-          (if? a b c)
-
-          (granpa &gt; parent &gt; obj &gt; (child 2) &gt; grandchild 3 4 5)
-          ;; direct access with []
-          (obj &gt; 2 &gt; "key" &gt; 'key &gt; :key)
-          ;; prototype accessor
-          (obj &gt;&gt; child &gt; grandchild)
-          (obj &gt;&gt; (method a))
-          (obj &gt;&gt;)
-          ;; existantial accessor
-          (a ? b ? c)
-
-          ;; function call chaining
-          (--- cc1 ("one-again") ("two-again") ("three-again"))
-
-          ;; if-statement with returning a value
-          ;; and alias from "or" to ||, "and" to &amp;&amp;
-          (or ((if a b c) &gt; '(if d e f)) (and (x a) (x b)))
-          ;; implicit return
-          a))
+<pre class="example">(defun fundamentals ()
+  ;; fundamentals
+  (maca (glue a 2 space "string")
+                (paren a)
+                (paren (paren a))                       ;reduces redundancy automatically
+                (paren (paren (paren a)))                       ;reduces redundancy automatically
+                (comma (comma a b c) (comma a b c))
+                (comma a b c)
+                (stringify a)
+                (blk ((a b c)))
+                (blk 
+                 ((blk 
+                   ((a b c)))))
+                (bracket a)
+                ;; constants and basic assignments
+                undefined
+                t
+                "string"
+                ;; comments (if you want to include some comment into js)
+                (// "haaa~~~~ this is comfortable")
+                (// a)))
 
 </pre>
 
@@ -323,31 +319,35 @@ so open the REPL in the repository and input these code to the interpreter:
 
 
 
-<pre class="example">function(a){
-        var d,e,f,g,tmp203,tmp204;
-        if(a(b,c)){d = (a + (b + c))e = (a==b)&amp;&amp;(b==c)&amp;&amp;(c==d)
-        }else{f = [a,b(c),(1 + (2 + 3))]g = {a:a,b:b(c),c:(1 + (2 + 3))
-                }
-        };
-        if(((a!==undefined) &amp;&amp; ((typeof a)!=="undefined"))){b
-        }else{c
-        };
-        granpa.parent.obj.child(2).grandchild(3,4,5);
-        obj[1]["key"][key][key];
-        obj.prototype.child.grandchild;
-        obj.prototype.method(a);
-        obj.prototype;
-        ((((g1625 = a.b)!=undefined))?(((((g1626 = g1625.c)!=undefined))?(g1626):((void 0)))):((void 0)));
-    cc1("one-again")("two-again")("three-again");
-        (if(a){tmp203 = b
-        }else{tmp203 = c
-        }if(d){tmp204 = e
-        }else{tmp204 = f
-        }tmp203[tmp204] || (x(a) &amp;&amp; x(b)));
-        return a;
-};
+<pre class="example">MACA&gt; (fundamentals)
+
+a2 "string";
+(a);
+((a));
+(((a)));
+a,b,c,a,b,c;
+a,b,c;
+'a';
+{ /* indentation level: 0 */
+        a(b,c);
+}
+;
+{ /* indentation level: 0 */
+        { /* indentation level: 1 */
+                a(b,c);
+        }
+        ;
+}
+;
+[a];
+undefined;
+true;
+"string";
+ /* haaa~~~~ this is comfortable */;
+ /* A */;
 
 </pre>
+
 
 
 
@@ -357,55 +357,54 @@ so open the REPL in the repository and input these code to the interpreter:
 </div>
 
 <div id="outline-container-4-2" class="outline-3">
-<h3 id="sec-4-2"><span class="section-number-3">4.2</span> Procedure/Inline/Inherit-this function </h3>
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> Assignments </h3>
 <div class="outline-text-3" id="text-4-2">
 
 
 
 
 
-<pre class="example">(maca (-/&gt; ()
-          ;; inline function: maca expands it safely
-          (-/ baz (a b) (+ (some-operation a) (other-operation b)))
-          (= foo (baz foo bar))
+<pre class="example">(defun assignments ()
+  ;; assignments
+  (maca (= number 3)
+                (blk ((= number 3) (= number 3)))
+                (with-label (label) 
+                  (= number 3)
+                  (= number 3))
+                (comma (= number 3) (= number 3)))
+  (maca (var number 3))
+  (maca (var number))
+  ;;(maca (var (+ 2 1) 3)) ;throws error
+  )
 
-          ;; procedure function: functions without a implicit return
-          (-/&gt; (b)
-              (if (&lt; b 3)
-                  (var a (+ 3 b))
-                  (var a (+ b 3)))
-              (= @a 2)                  ; alias for this[a]
-              ;; inherit-this function (=&gt;): saves 'this' of the outer environment 
-              (($ "button") &gt; (click (=&gt; (e) (alert (this &gt; 2))))))))
+</pre>
+
+
+
+
+
+<pre class="example">MACA&gt; (assignments)
+
+number = 3;
+{ /* indentation level: 0 */
+        number = 3;
+        number = 3;
+}
+;
+label:{ /* indentation level: 0 */
+        number = 3;
+        number = 3;
+}
+;
+number = 3,number = 3;
+
+var number;
+number = 3;
+
+var number;
 
 </pre>
 
-
-
-
-
-<pre class="example">function(){
-        var tmp1443,tmp1444,tmp24;
-        ;
-
-        tmp1444 = bar;
-        tmp1443 = foo;
-        tmp24 = (someOperation(tmp1443) + otherOperation(tmp1444));foo = tmp24;
-        function(b){
-                var a,t1452,f1453;
-                t1452 = this;
-                f1453 = function(e){
-                        return alert(t1452[1]);
-                };
-                if((b&lt;3)){a = (3 + b)
-                }else{a = (b + 3)
-                };
-                this.a = 2;
-                $("button").click(f1453);
-        };
-};
-
-</pre>
 
 
 
@@ -414,41 +413,39 @@ so open the REPL in the repository and input these code to the interpreter:
 </div>
 
 <div id="outline-container-4-3" class="outline-3">
-<h3 id="sec-4-3"><span class="section-number-3">4.3</span> Call/cc </h3>
+<h3 id="sec-4-3"><span class="section-number-3">4.3</span> Operaters </h3>
 <div class="outline-text-3" id="text-4-3">
 
 
 
 
 
-<pre class="example">(maca ((alert
-                (with-cc (cont)
-                  ($ &gt; (get "http://google.com"
-                                        (-/&gt; (xhr) (cont (xhr &gt; responce-text)))))))))
+<pre class="example">(defun ops ()
+  ;; infix
+  (maca (&gt;&gt;&gt; number 3)
+                (+ a 3)
+                (+ a 3 4)
+                (- a 3 4)
+                (* a 3 4)
+                (+ a 3 (&gt;&gt;&gt; number 3))
 
-(maca ((var cc1)
-           (var cc2)
-           (var cc3)
-           (alert (with-cc (cont1) 
-                                (= cc1 cont1)
-                                (cont1 (confirm "one")))
-                          (with-cc (cont2)
-                                (= cc2 cont2)
-                                (cont2 (confirm "two")))
-                          5
-                          (with-cc (cont3)
-                                (= cc3 cont3)
-                                (cont3 (confirm "three")))
-                          4)
-           (console &gt; (log (cc1 &gt; (to-string))))
-           (--- cc1 ("one-again") ("two-again") ("three-again"))
-           (// "this will call cont2 and cont3 again")
-           (console &gt; (log (cc2 &gt; (to-string))))
-           (--- cc2  ("two-again") ("three-again"))
-           (// "this will call cont3 again")
-           (console &gt; (log (cc3 &gt; (to-string))))
-           (--- cc3 ("three-again"))
-           (// "this will call alert")))
+                ;; assignments
+                (= a 3)
+                (= a (a &gt; b &gt; v))
+                (a &gt; b &gt; v)
+
+                ;; comparison
+                (&lt; number 50)
+                (== 5 3)
+                (== 5 3 4)
+                (&gt;= 5 3 4)
+
+                ;; mono-ops
+                (new -number)
+                (typeof 5)
+
+                ;; in
+                (in 5 array)))
 
 </pre>
 
@@ -456,48 +453,27 @@ so open the REPL in the repository and input these code to the interpreter:
 
 
 
-<pre class="example">((function(cont){
-        return $.get("http://google.com",function(xhr){
-                cont(xhr.responceText);
-        });
-})(function(valueArg1053){
-        var tmp121;
-        return tmp121 = alert(valueArg1053);
-}));;
+<pre class="example">MACA&gt; (ops)
 
-var cc1,cc2,cc3;
-
-((function(cont3){
-        cc3 = cont3;
-        return cont3(confirm("three"));
-})(((function(cont2){
-        cc2 = cont2;
-        return cont2(confirm("two"));
-})(((function(cont1){
-        cc1 = cont1;
-        return cont1(confirm("one"));
-})(function(valueArg1062){
-        return function(valueArg1065){
-                return function(valueArg1068){
-                        var tmp121;
-                        return tmp121 = alert(valueArg1062,valueArg1065,5,valueArg1068,4);
-                };
-        };
-}))))));
-console.log(cc1.toString());
-cc1("one-again")("two-again")("three-again");
- /* this will call cont2 and cont3 again */
-;
-console.log(cc2.toString());
-cc2("two-again")("three-again");
- /* this will call cont3 again */
-;
-console.log(cc3.toString());
-cc3("three-again");
- /* this will call alert */
-;;
+(number &gt;&gt;&gt; 3);
+(a + 3);
+(a + (3 + 4));
+(a NIL (3 NIL 4));
+(a * (3 * 4));
+(a + (3 + (number &gt;&gt;&gt; 3)));
+a = 3;
+a = a.b.v;
+a.b.v;
+(number&lt;50);
+(5==3);
+(5==3)&amp;&amp;(3==4);
+(5&gt;=3)&amp;&amp;(3&gt;=4);
+(new Number);
+(typeof 5);
+(5 in array);
 
 </pre>
+
 
 
 
@@ -507,8 +483,241 @@ cc3("three-again");
 </div>
 
 <div id="outline-container-4-4" class="outline-3">
-<h3 id="sec-4-4"><span class="section-number-3">4.4</span> other supported syntaxes </h3>
+<h3 id="sec-4-4"><span class="section-number-3">4.4</span> Procedure/Inline/Inherit-this function </h3>
 <div class="outline-text-3" id="text-4-4">
+
+
+
+
+
+<pre class="example">(defun functions ()
+  ;; global scope(bare)
+  (maca (a b c)
+                (= d (- a b c))
+                (var e 2)
+                (+ a b c d e))
+
+  ;; function definition
+  ;; normal function: implicit return on
+  ;; procedure function: returns undefined
+  (maca (-/&gt; (a)
+                         (alert a)
+                         (-&gt; (b)
+                                 (if (&lt; b 3)
+                                         ((var a (- 3 b))
+                                          (= b (expr a 5)))
+                                         ((var a (- b 3))))
+                                 (var c (+ a 3))
+                                 (alert a b)
+                                 a)))
+
+  ;; inherit-this function: saves 'this' of the outer environment
+  (maca (a &gt; (click (=/&gt; (e) 
+                                                 (alert (this &gt; 2))))))
+
+  ;; inline function: they are directly expanded into the environment
+
+  (maca (foo)
+                (bar foo)
+                (-/ baz (a b) (+ (some-operation a)
+                                                 (other-operation b)))
+                (-/ bud (a b) (+ (sqrt a)
+                                                 (expr b)))
+
+                (= foo (baz foo bar))
+                (alert (baz 1 (bud foo bar)))))
+
+</pre>
+
+
+
+
+
+<pre class="example">MACA&gt; (functions)
+
+var e;
+a(b,c);
+d = (a NIL (b NIL c));
+e = 2;
+(a + (b + (c + (d + e))));
+
+var a,c;
+function(a){ /* indentation level: 0 */
+        var a,c;
+        alert(a);
+        function(b){ /* indentation level: 1 */
+                var a,c;
+                if((b&lt;3)){ /* indentation level: 2 */
+                        a = (3 NIL b);
+                        b = expr(a,5);
+                }
+                else{ /* indentation level: 2 */
+                        a = (b NIL 3);
+                }
+                c = (a + 3)alert(a,b);
+                return a;
+        }
+        ;
+}
+;
+
+var this3226,inheritedFn3227;
+this3226 = this;
+inheritedFn3227 = function(e){ /* indentation level: 0 */
+        alert(this3226[1]);
+}
+;
+a.click(inheritedFn3263);
+
+var inlineTmp3266,inlineTmp3267,setterTemp3265,inlineTmp3283,inlineTmp3284,inlineTmp3286,inlineTmp3287,setterTemp3285,inlineTmp3303,inlineTmp3304,setterTemp3302,argName3282;
+foo();
+bar(foo);
+
+inlineTmp3352 = bar;
+inlineTmp3351 = foo;
+setterTemp3350 = (someOperation(inlineTmp3351) + otherOperation(inlineTmp3352));
+foo = setterTemp3350;
+
+
+inlineTmp3438 = bar;
+inlineTmp3437 = foo;
+setterTemp3436 = (sqrt(inlineTmp3437) + expr(inlineTmp3438));
+inlineTmp3418 = setterTemp3436;
+inlineTmp3417 = 1;
+argName3416 = (someOperation(inlineTmp3417) + otherOperation(inlineTmp3418));
+alert(argName3416);
+
+</pre>
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4-5" class="outline-3">
+<h3 id="sec-4-5"><span class="section-number-3">4.5</span> Call/cc </h3>
+<div class="outline-text-3" id="text-4-5">
+
+
+
+
+
+<pre class="example">(defun continuation ()
+  (maca (alert
+                 (with-cc (cont)
+                   ($ &gt; (get "http://google.com"
+                                         (-/&gt; (xhr) (cont (xhr &gt; responce-text)))))))
+
+                (var cc1)
+                (var cc2)
+                (alert (with-cc (cont1) 
+                                 (= cc1 cont1)
+                                 (cont1 (confirm "one")))
+                           2
+                           (with-cc (cont2)
+                                 (= cc2 cont2)
+                                 (cont2 (confirm "two"))))
+                (console &gt; (log (cc1 &gt; (to-string))))
+                (cc1 "one-again") (// "this will call cont2 again")
+
+                (console &gt; (log (cc2 &gt; (to-string))))
+                (cc2 "two-again")
+
+                (// "if you want to use continuation for a method, do like this:")
+                (funcall (console &gt; log)
+                                 (with-cc (cont1) 
+                                   (= cc1 cont1)
+                                   (cont1 (confirm "one")))
+                                 (with-cc (cont2)
+                                   (= cc2 cont2)
+                                   (cont2 (confirm "two")))))
+
+  ;; now you can use continuation with the infix operators.
+  (maca (var cc)
+            (alert (+ 1 (with-cc (cont)
+                                          (= cc cont)
+                                          (cont 2))
+                                  3))
+                (alert (cc 5))))
+
+</pre>
+
+
+
+
+
+<pre class="example">var cc1,cc2;
+(function(cont){ /* indentation level: 0 */
+        return $.get("http://google.com",function(xhr){ /* indentation level: 1 */
+                cont(xhr.responceText);
+        }
+        );
+}
+)(function(valueArg2207){ /* indentation level: 0 */
+        return alert(valueArg2207);
+}
+);
+(function(cont2){ /* indentation level: 0 */
+        cc2 = cont2;
+        return cont2(confirm("two"));
+}
+)(function(valueArg2318){ /* indentation level: 0 */
+        return (function(cont1){ /* indentation level: 0 */
+        cc1 = cont1;
+        return cont1(confirm("one"));
+}
+)(function(valueArg2331){ /* indentation level: 1 */
+                return alert(valueArg2318,2,valueArg2331);
+        }
+        );
+}
+);
+console.log(cc1.toString());
+cc1("one-again");
+ /* this will call cont2 again */;
+console.log(cc2.toString());
+cc2("two-again");
+ /* if you want to use continuation for a method, do like this: */;
+(function(cont2){ /* indentation level: 0 */
+        cc2 = cont2;
+        return cont2(confirm("two"));
+}
+)(function(valueArg2448){ /* indentation level: 0 */
+        return (function(cont1){ /* indentation level: 0 */
+        cc1 = cont1;
+        return cont1(confirm("one"));
+}
+)(function(valueArg2461){ /* indentation level: 1 */
+                return console.log(valueArg2448,valueArg2461);
+        }
+        );
+}
+);
+
+var cc;
+alert((function(cont){ /* indentation level: 0 */
+        cc = cont;
+        return cont(2);
+}
+)(function(valueArg2554){ /* indentation level: 0 */
+        return (1 + (valueArg2554 + 3));
+}
+));
+alert(cc(5));
+
+</pre>
+
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4-6" class="outline-3">
+<h3 id="sec-4-6"><span class="section-number-3">4.6</span> other supported syntaxes </h3>
+<div class="outline-text-3" id="text-4-6">
 
 
 <ul>
@@ -528,9 +737,9 @@ cc3("three-again");
 
 </div>
 
-<div id="outline-container-4-5" class="outline-3">
-<h3 id="sec-4-5"><span class="section-number-3">4.5</span> Using defmaca to define a new syntax </h3>
-<div class="outline-text-3" id="text-4-5">
+<div id="outline-container-4-7" class="outline-3">
+<h3 id="sec-4-7"><span class="section-number-3">4.7</span> Using defmaca to define a new syntax </h3>
+<div class="outline-text-3" id="text-4-7">
 
 
 <p>
@@ -647,7 +856,7 @@ Univ. of Tokyo
 </div>
 </div>
 <div id="postamble">
-<p class="date">Date: 2012-04-12 22:58:53 JST</p>
+<p class="date">Date: 2012-04-27 11:44:11 JST</p>
 <p class="author">Author: 浅井　政太郎 (Masataro Asai from Univ. of Tokyo)</p>
 <p class="creator">Org version 7.6 with Emacs version 23</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>

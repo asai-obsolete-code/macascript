@@ -33,37 +33,14 @@
 	))
 
 (defmaca (m-function-call :environment env :is-value t) (op args)
-  (let (handlers actual-args value-args)
-	(loop for arg in args do
-		 (if (and (typep arg 'list)
-				  (eq (car arg) 'with-cc))
-			 (with-gensyms (value-arg)
-			   (push (m-compile env arg) handlers)
-			   (push value-arg actual-args)
-			   (push value-arg value-args))
-			 (push arg actual-args)))
-	(if handlers
-		(progn 
-		  (let ((result 
-				 (with-set-temps-in-list 
-					 (env (reverse actual-args) temps)
-				   `(glue ,op (paren (comma ,@temps))))))
-			(loop
-			   for arg in value-args
-			   for handler in (reverse handlers)
-			   do
-				 (setf result `(-> (,arg) ,result))
-			   do
-				 (setf result `(--- (paren ,handler) (,result))))
-			result))
-		(with-set-temps-in-list (env args temps)
-		  `(glue ,op (paren (comma ,@temps)))))))
+  (with-check-cc (args)
+	(with-set-temps-in-list (env args temps)
+	  `(glue ,op (paren (comma ,@temps))))))
 
 (defmaca (m-chain-function-call :is-value t) (op chain-arguments)
   (if chain-arguments
 	  `(--- (funcall ,op ,@(car chain-arguments)) ,@(cdr chain-arguments))
 	  op))
-
 
 (defmaca (m-inline-function-call :environment env
 								 :return return-as)
