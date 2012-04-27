@@ -74,8 +74,7 @@
 
   ;; now you can use continuation with the infix operators.
   (maca (var cc)
-	    (alert (+ 1 (with-cc (cont)
-					  (= cc cont)
-					  (cont 2))
-				  3))
+	    (alert (+ 1 3 (with-cc (cont)
+						(= cc cont)
+						(cont 2))))
 		(alert (cc 5))))
