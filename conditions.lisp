@@ -20,10 +20,6 @@
 	((list* 'with-label _) (error "invalid label name"))
 
 	((list* 'switch val conditions)	  (rewrite m-switch val conditions))
-	((list* 'case val body)	          (rewrite m-case val body))
-	((list* 'cases (list* vals) body) (rewrite m-cases vals body))
-	((list* 'cases _ body)	          (error "invalid cases"))
-	((list* 'default body)	          (rewrite m-default body))
       
 	((list 'try body 'catch (list error-var) error)
 	 (rewrite m-try body error-var error))
@@ -88,32 +84,23 @@
 ;; todo: make it return a value
 (defmaca (m-switch :environment env
 				   :return temp) (val conditions)
-  (if temp
-	  `(switch (,val)
-		 ,@(mapcar #'(lambda (condition)
-					   (m-compile env condition :return temp))
-				   conditions))
-	  (with-set-temp env (val)
-		`(glue switch (paren ,val)
-			   (blk (glue ,@conditions))))))
+  (with-set-temp env (val)
+	`(glue switch (paren ,val) (blk
+	   (glue ,@(mapcar 
+				#'(lambda (condition)
+					(match condition
+					  ((list* :case (list* vals) body) (m-case   env temp  vals body))
+					  ((list* :default body)	       (m-default env temp  body))
+					  (_ (error "bad switch condition declaration"))))
+				conditions))))))
 
-(defmaca (m-cases :environment env
+(defmaca (m-case :environment env
 				  :return temp) (vals body)
   (let ((body2 (1-or-2-line body)))
 	`(glue ,@(reduce #'append 
 					 (mapcar #'(lambda (val)
 								 `((newline-and-indent) case space ,val colon))
 							 vals))
-		   (blk (,@(if temp
-					   (1-or-2-line-set-temp body2 temp)
-					   body2)
-				   break)))))
-
-(defmaca (m-case :environment env
-				  :return temp) (val body)
-  (let ((body2 (1-or-2-line body)))
-	`(glue (newline-and-indent)
-		   case space ,val colon 
 		   (blk (,@(if temp
 					   (1-or-2-line-set-temp body2 temp)
 					   body2)
@@ -129,12 +116,11 @@
 					   body2)
 				   break)))))
 
-
 ;; -----------------------------
 ;; try/catch expression
 
 (defmaca (m-try :environment env
-				:return temp) 
+				:return temp)
 	(body error-var error &optional finally)
   `(glue try
 		 (blk ,(if temp (1-or-2-line-set-temp body temp) body))

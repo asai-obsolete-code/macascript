@@ -119,7 +119,7 @@
 		  (content > (if (> a b) a b)))) 
 
 (maca (if (a b c)
-		  (= d (- a b c))))		;one-line
+		  ((= d (- a b c)))))		;one-line
 (maca (if (a b c)
 		  (= d (- a b c))
 		  (= d (- a b c))))		;one-line else
@@ -242,26 +242,37 @@
 	   while (not tired)))
 
 ;; switch
-
-(maca (switch x
-		(case 1
-		  (alert x))))
-
-(maca (switch x
-		(case 1
-		  (alert x))			;1 case 1 statement
-		(case 2				;1 case 2 statements
-		  (alert 22)
-		  (alert 22))
-		(cases (3 4)			;2 cases 1 statements
-			   (alert x))
-		(cases ((sqrt 2)
-				(sqrt 3))	        ;2 cases 2 statements
-			   (alert x) 
-			   (alert x))
-		(default
-			(alert "default")
-			(alert "default")
-		  (alert "default"))))	;defaults
-;)
-
+(defun switch-test ()
+  (maca (switch x
+		  (:case (1)
+			(alert x))			;1 case 1 statement
+		  (:case (2)				;1 case 2 statements
+			(alert 22)
+			(alert 22))
+		  (:case (3 4)			;2 cases 1 statements
+			(alert x))
+		  (:case ((sqrt 2)
+				  (sqrt 3))	        ;2 cases 2 statements
+			(alert x) 
+			(alert x))
+		  (:default
+			  (alert "default")
+			  (alert "default")
+			  (alert "default")))
+		(// "try to set a value")
+		(= a (switch x
+		  (:case (1)
+			(alert x))			;1 case 1 statement
+		  (:case (2)				;1 case 2 statements
+			(alert 22)
+			(alert 22))
+		  (:case (3 4)			;2 cases 1 statements
+			(alert x))
+		  (:case ((sqrt 2)
+				  (sqrt 3))	        ;2 cases 2 statements
+			(alert x) 
+			(alert x))
+		  (:default
+			  (alert "default")
+			  (alert "default")
+			  (alert "default"))))))

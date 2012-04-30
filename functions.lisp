@@ -8,7 +8,6 @@
 	((list* 'function name (as type (or '-> '-/>)) (list* args) body)
 	 (rewrite m-function-declaration name type args body))
 	((list* '-> (list* args) body)      (rewrite m-function args body))
-	((list* '-> (list* args) body)      (rewrite m-function args body))
 	((list* '=> (list* args) body)      (rewrite m-inherit-this-function args body))
 	((list* '-/> (list* args) body)     (rewrite m-procedure-function args body))
 	((list* '=/> (list* args) body)     (rewrite m-inherit-this-procedure-function args body))
