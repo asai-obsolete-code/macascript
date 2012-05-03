@@ -56,8 +56,7 @@
 				(decf (closure-indentation (car env)))
 				contents)
 		 (newline-and-indent)
-		 rbrace
-		 (newline-and-indent)))
+		 rbrace))
 
 (defmaca (m-comma :is-value t) (args)
   `(glue ,@(mapcan
