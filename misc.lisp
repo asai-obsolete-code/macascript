@@ -28,8 +28,8 @@
 	   (if lmb
 		   (rewrite m-inline-function-call arguments lmb found-cl)
 		   (rewrite m-function-call op arguments))))
-	((list* scripts) 
-	 (values (mapcar #'(lambda (scr) (m-compile env scr)) scripts) t 'list))
+	;; ((list* scripts) 
+	;;  (values (mapcar #'(lambda (scr) (m-compile env scr)) scripts) t 'list))
 	))
 
 (defmaca (m-function-call :environment env :is-value t) (op args)
@@ -66,8 +66,9 @@
 			body)))))
 
 (defmaca (m-sentence :environment env) (sent)
-  (compile-let* env ((compiled-sent sent))
-	(if compiled-sent					;non-nil
+  (compile-let* (cons (make-closure) env) ((compiled-sent sent))
+	(if (or compiled-sent
+			(not (eq (car sent) 'blk)))
 		`(glue (newline-and-indent) ,sent semicolon)
 		`(glue ,sent))))
 
