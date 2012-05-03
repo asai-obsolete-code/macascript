@@ -24,8 +24,8 @@
 	(class-name superclasses slot-descriptions options)
   (declare (type symbol class-name))
   (declare (type (list symbol) slot-descriptions))
-  ;; (when (notevery #'symbolp superclasses)
-  ;; 	(error "invalid superclass specifier: ~a" superclasses))
+  (check-type symbol class-name  "invalid class name specifier")
+  (check-type slot-descriptions (list symbol) "invalid superclass specifier")
   (destructuring-bind (&key static) options
 	(declare (ignore static))
 	`(var ,class-name
@@ -33,29 +33,36 @@
 			  if (symbolp slot)
 			  append (list (keywordize slot) 'undefined)
 			  else
-			  append 
-				(destructuring-bind (name definition &key setter getter (readable t) (writable t)) slot
-				  (let ((script (list (keywordize name) (or definition 'undefined))))
-					(appendf script
-							 (if setter
-								 (if writable
-									 `((set ,(keywordize name)) (-> (,name) ,@setter))
-									 `(-> ()
-										  (// ,(format nil "the slot ~a is not writable, setter ignored." name))
-										  (throw (new (-error ,(format nil "~a is not writable" name))))))
-								 (if (not writable)
-									 `((set ,(keywordize name))
-									   (-> () (throw (new (-error ,(format nil "~a is not writable" name))))))
-									 nil))
-							 (if getter
-								 (if readable
-									 `((get ,(keywordize name)) (-> () ,@getter))
-									 `((get ,(keywordize name))
-									   (-> () 
-										   (// ,(format nil "the slot ~a is not readable, getter ignored." name))
-										   (throw (new (-error ,(format nil "~a is not readable" name)))))))
-								 (if readable
-									 nil
-									 `((get ,(keywordize name))
-									   (-> () (throw (new (-error ,(format nil "~a is not readable" name)))))))))
-					script))))))
+			  append (build-dynamic-method slot)))))
+
+(defmaca (m-declaretype :environment env) (varname type)
+  (setf (getf (closure-type-assertion +cl+) varname) type)
+  nil)
+
+(declare (inline build-dynamic-method))
+(defun build-dynamic-method (slot)
+  (destructuring-bind (name definition &key setter getter (readable t) (writable t)) slot
+	(let ((script (list (keywordize name) (or definition 'undefined))))
+	  (appendf script
+			   (if setter
+				   (if writable
+					   `((set ,(keywordize name)) (-> (,name) ,@setter))
+					   `(-> ()
+							(// ,(format nil "the slot ~a is not writable, setter ignored." name))
+							(throw (new (-error ,(format nil "~a is not writable" name))))))
+				   (if (not writable)
+					   `((set ,(keywordize name))
+						 (-> () (throw (new (-error ,(format nil "~a is not writable" name))))))
+					   nil))
+			   (if getter
+				   (if readable
+					   `((get ,(keywordize name)) (-> () ,@getter))
+					   `((get ,(keywordize name))
+						 (-> () 
+							 (// ,(format nil "the slot ~a is not readable, getter ignored." name))
+							 (throw (new (-error ,(format nil "~a is not readable" name)))))))
+				   (if readable
+					   nil
+					   `((get ,(keywordize name))
+						 (-> () (throw (new (-error ,(format nil "~a is not readable" name)))))))))
+	  script)))
