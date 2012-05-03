@@ -102,7 +102,9 @@ defined as a function)
   (initializations nil)
   (inline-lambda nil)
   (function-lambda nil)					; unused now
-  (indentation 0))
+  (indentation 0)
+  (type-assertions nil)
+  (static-classes nil))
 
 (defmacro recompile ()
   `(defun m-compile (env lst &key return)
