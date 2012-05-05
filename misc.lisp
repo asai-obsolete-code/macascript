@@ -76,6 +76,3 @@
   `(glue ,@(mapcar
 			#'(lambda (sent) `(sentence ,sent))
 			sents)))
-
-(recompile)
-(setf *recompile-compiler* t)

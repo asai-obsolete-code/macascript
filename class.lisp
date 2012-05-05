@@ -1,5 +1,4 @@
 
-
 (in-package :maca)
 
 (defparameter *class*
@@ -12,27 +11,7 @@
 (defun keywordize (symbol)
   (make-keyword (symbol-name symbol)))
 
-(defmaca (m-class :environment env
-				  :return temp)
-	(class-name superclasses slot-descriptions options)
-  (declare (type symbol class-name))
-  (declare (type (list symbol) slot-descriptions))
-  (check-type symbol class-name  "invalid class name specifier")
-  (check-type slot-descriptions (list symbol) "invalid superclass specifier")
-  (destructuring-bind (&key static) options
-	(declare (ignore static))
-	`(var ,class-name
-		  ,(loop for slot in slot-descriptions
-			  if (symbolp slot)
-			  append (list (keywordize slot) 'undefined)
-			  else
-			  append (build-dynamic-method slot)))))
-
-(defmaca (m-declaretype :environment env) (varname type)
-  (setf (getf (closure-type-assertion +cl+) varname) type)
-  nil)
-
-(declare (inline build-dynamic-method))
+;; (declare (inline build-dynamic-method))
 (defun build-dynamic-method (slot)
   (destructuring-bind (name definition &key setter getter (readable t) (writable t)) slot
 	(let ((script (list (keywordize name) (or definition 'undefined))))
@@ -59,3 +38,20 @@
 					   `((get ,(keywordize name))
 						 (-> () (throw (new (-error ,(format nil "~a is not readable" name)))))))))
 	  script)))
+
+(defmaca (m-class :environment env
+				  :return temp)
+	(class-name superclasses slot-descriptions options)
+  (check-type class-name symbol  "invalid class name specifier")
+  (destructuring-bind (&key static) options
+	(declare (ignore static))
+	`(var ,class-name
+		  ,(loop for slot in slot-descriptions
+			  if (symbolp slot)
+			  append (list (keywordize slot) 'undefined)
+			  else
+			  append (build-dynamic-method slot)))))
+
+(defmaca (m-declaretype :environment env) (varname type)
+  (setf (getf (closure-type-assertion +cl+) varname) type)
+  nil)

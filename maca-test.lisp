@@ -1,11 +1,10 @@
-;; (defpackage maca-test
-;;   (:use :common-lisp :cl-user :maca))
-;; (in-package :maca-test)
+(defpackage maca-test
+  (:use :common-lisp :cl-user :maca))
+(in-package :maca-test)
 
-(require 'macascript)
-(in-package :maca)
-(recompile)
-
+;; (require 'macascript)
+;; (in-package :maca)
+;; (recompile)
 
 (defun fundamentals ()
   ;; fundamentals

@@ -1,6 +1,8 @@
 
 
-(defvar *delay*
+(in-package :maca)
+
+(defparameter *delay*
   '(((list 'delay delayed) (rewrite m-delay delayed))
 	((list 'force delayed) (rewrite m-force delayed))))
 

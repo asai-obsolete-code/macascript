@@ -1,8 +1,13 @@
 
 (defpackage maca
   (:use :common-lisp :cl-user :alexandria :cl-match :anaphora :cl-ppcre)
-  ;;(:export 'maca 'm-compile 'maca-compile 'maca-format)
-  )
+  (:export "MACA"
+		   "M-COMPILE"
+		   "MACA-COMPILE"
+		   "MACA-FORMAT"
+		   "RECOMPILE"
+		   "PATTERNS"
+		   "*RECOMPILE-COMPILER*"))
 
 ;;(proclaim '(optimize (debug 3)))
 (declaim (optimize (debug 3)))
@@ -53,28 +58,29 @@
     (comment . \\))
   "alist for aliasing the constants such as \"on\" \"yes\".")
 
-(defparameter *recompile-compiler* nil)
-(defparameter *ops* nil)
-(defparameter *customs* nil)
-(defparameter *conditions* nil)
-(defparameter *conditions2* nil)
-(defparameter *fundamentals* nil)
-(defparameter *iteraters* nil)
-(defparameter *objects* nil)
-(defparameter *fundamentals* nil)
-(defparameter *miscellaneous* nil)
-(defparameter *functions* nil)
+(defmacro define-parameters (&rest names)
+  `(progn ,@(loop for name in names collect
+				 `(defparameter ,name nil))))
+
+(define-parameters
+	*recompile-compiler* *ops* 
+  *customs* *conditions* *conditions2* 
+  *fundamentals* *iteraters* *objects* *fundamentals* 
+  *miscellaneous* *functions* *cont* *class* *delay*)
 
 ;; core macros
 
-(defun show-patterns ()
-  (append *fundamentals*
-		  *ops*
+(defun patterns ()
+  (append *ops*
+		  *fundamentals*
 		  *functions*
 		  *iteraters*
 		  *conditions*
 		  *conditions2*
 		  *objects*
+		  *class*
+		  *delay*
+		  *cont*
 		  *customs*
 		  *miscellaneous*))
 
@@ -114,16 +120,7 @@ defined as a function)
 			  `(multiple-value-bind (,definition ,is-value-option)
 				   (,name env return ,@args)
 				 (values ,definition ,is-value-option ',name)))))
-	   (match lst
-		 ,@(copy-tree *ops*)
-		 ,@(copy-tree *fundamentals*)
-		 ,@(copy-tree *functions*)
-		 ,@(copy-tree *iteraters*)
-		 ,@(copy-tree *conditions*)
-		 ,@(copy-tree *conditions2*)
-		 ,@(copy-tree *objects*)
-		 ,@(copy-tree *customs*)
-		 ,@(copy-tree *miscellaneous*)))))
+	   (match lst ,@(patterns)))))
 
 (defmacro defmaca (name-or-name-and-options args &body body)
   (if (symbolp name-or-name-and-options)
@@ -140,7 +137,14 @@ defined as a function)
   (with-gensyms (definition is-value-option)
     `(progn
 	   (defun ,name (,environment ,return ,@args)
-		 (declare (ignorable ,return ,environment))
+		 (declare (ignorable ,return ,environment
+							 ,@(loop for arg in args
+								  if (and (symbolp arg)
+										  (not (member arg '(&key &rest &optional))))
+								  collect arg
+								  else
+								  if (listp arg)
+								  collect (car arg))))
 		 (let ((+cl+ (car ,environment)))
 		   (with-slots ((+variables+ variables)
 						(+initializations+ initializations)

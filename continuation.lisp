@@ -1,9 +1,7 @@
 
 (in-package :maca)
-(defparameter *customs*
-  '(;;
-	((list* 'with-cc (list cc) body) (rewrite m-with-cc cc body))
-	))
+(defparameter *cont*
+  '(((list* 'with-cc (list cc) body) (rewrite m-with-cc cc body))))
 
 ;; (defmaca (m-with-cc :is-value t) (cc body)
 ;;   ;;(break "cc-name:~a~%body:~a" cc body)
