@@ -1,13 +1,6 @@
 
 
-
-
 (in-package :maca)
-
-
-(ifmatch (list 'a 'b c) '(a b 3) c)
-
-
 
 (defparameter *class*
   '(((list* 'class class-name
